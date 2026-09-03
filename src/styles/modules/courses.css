@@ -1,0 +1,140 @@
+/**
+ * Modular Stylesheet — Courses, Schedules & Timetable Grid (StudentCourses)
+ */
+
+.courses-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Course Card Item */
+.course-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-subtle);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
+}
+
+.course-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary-200);
+}
+
+.course-code-badge {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: var(--radius-xs);
+  background: var(--primary-50);
+  color: var(--primary-700);
+  border: 1px solid var(--primary-200);
+}
+
+.course-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--slate-900);
+  line-height: 1.3;
+}
+
+.course-schedule-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  color: var(--slate-600);
+  background: var(--slate-50);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+}
+
+/* Timetable Grid */
+.timetable-root {
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.timetable-header {
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--slate-50);
+}
+
+.timetable-grid-wrapper {
+  overflow-x: auto;
+  min-width: 650px;
+}
+
+.timetable-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.timetable-day-header {
+  background: var(--slate-100);
+  padding: 12px 16px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--slate-700);
+  text-align: center;
+  border-right: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.timetable-time-cell {
+  background: var(--slate-50);
+  padding: 14px 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--slate-500);
+  text-align: center;
+  border-right: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  width: 110px;
+  font-family: var(--font-mono);
+}
+
+.timetable-slot-cell {
+  padding: 8px;
+  border-right: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: top;
+  min-height: 80px;
+  background: var(--bg-card);
+}
+
+.timetable-event-block {
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--primary-50);
+  border-left: 3px solid var(--primary-600);
+  box-shadow: var(--shadow-xs);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.timetable-event-title {
+  font-size: 0.78125rem;
+  font-weight: 700;
+  color: var(--primary-900);
+}
+
+.timetable-event-room {
+  font-size: 0.6875rem;
+  color: var(--primary-700);
+}

@@ -1,10 +1,22 @@
 import React from 'react';
-import { C } from '../../utils/theme';
 
-export function SectionHead({ title, action }: { title:string; action?:React.ReactNode }) {
+export function SectionHead({
+  title,
+  sub,
+  action,
+  className = '',
+}: {
+  title: string;
+  sub?: string;
+  action?: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
-      <h2 style={{margin:0,fontSize:16,fontWeight:800,color:C.slate9}}>{title}</h2>
+    <div className={`ui-section-head ${className}`.trim()}>
+      <div>
+        <h2 className="ui-section-title">{title}</h2>
+        {sub && <p className="ui-section-sub">{sub}</p>}
+      </div>
       {action}
     </div>
   );

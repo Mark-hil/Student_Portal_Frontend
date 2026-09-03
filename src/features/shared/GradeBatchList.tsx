@@ -109,22 +109,53 @@ export function GradeBatchList({ role }: { role:'lecturer'|'officer' }) {
   );
 }
 
+import { Download, Upload } from 'lucide-react';
+import toast from 'react-hot-toast';
+
 function BatchDetailModal({ batchId, onClose }: { batchId: string; onClose: () => void }) {
+  const qc = useQueryClient();
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const [importing, setImporting] = useState(false);
   const { data: batch, isLoading } = useQuery({
     queryKey: ['batches', batchId],
     queryFn: () => batchesApi.detail(batchId).then(r => r.data),
   });
 
+  const handleExportCsv = async () => {
+    try {
+      await batchesApi.exportCsv(batchId, `grades_${batch?.assignment?.course_code || 'batch'}.csv`);
+      toast.success('Roster CSV downloaded');
+    } catch (err) {
+      toast.error('Failed to export CSV');
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setImporting(true);
+      const res = await batchesApi.importCsv(batchId, file);
+      toast.success(res.data?.detail || 'Grades imported successfully');
+      qc.invalidateQueries({ queryKey: ['batches'] });
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Failed to import CSV');
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   return (
     <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.45)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:100}}>
-      <div style={{background:'#fff',borderRadius:18,padding:28,width:650,maxHeight:'85vh',display:'flex',flexDirection:'column'}}>
+      <div style={{background:'#fff',borderRadius:18,padding:28,width:680,maxHeight:'85vh',display:'flex',flexDirection:'column'}}>
         {isLoading ? (
           <div style={{padding:40,display:'flex',justifyContent:'center'}}><Spinner/></div>
         ) : !batch ? (
           <div>Error loading batch details.</div>
         ) : (
           <>
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:16}}>
               <div>
                 <div style={{fontSize:18,fontWeight:800,color:C.slate9,marginBottom:4}}>Batch Details: {batch.assignment?.title}</div>
                 <div style={{fontSize:12,color:C.slate5}}>{batch.assignment?.course_code} · {batch.grade_count} grades submitted</div>
@@ -132,6 +163,45 @@ function BatchDetailModal({ batchId, onClose }: { batchId: string; onClose: () =
               <button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',color:C.slate4}}>
                 <XCircle size={20}/>
               </button>
+            </div>
+
+            <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:16}}>
+              <button
+                onClick={handleExportCsv}
+                style={{
+                  display:'flex',alignItems:'center',gap:6,
+                  padding:'6px 12px',background:C.slate1,color:C.slate7,
+                  border:`1px solid ${C.slate3}`,borderRadius:8,fontSize:12,
+                  fontWeight:600,cursor:'pointer',fontFamily:'inherit'
+                }}
+              >
+                <Download size={13}/> Export CSV Roster
+              </button>
+
+              {(batch.status === 'draft' || batch.status === 'rejected') && (
+                <>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept=".csv"
+                    style={{display:'none'}}
+                    onChange={handleFileChange}
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={importing}
+                    style={{
+                      display:'flex',alignItems:'center',gap:6,
+                      padding:'6px 12px',background:C.indigoL,color:C.indigo,
+                      border:`1px solid ${C.indigo}44`,borderRadius:8,fontSize:12,
+                      fontWeight:600,cursor:importing?'not-allowed':'pointer',fontFamily:'inherit',
+                      opacity:importing?0.7:1,
+                    }}
+                  >
+                    <Upload size={13}/> {importing ? 'Importing…' : 'Import CSV Grades'}
+                  </button>
+                </>
+              )}
             </div>
             
             <div style={{overflowY:'auto',border:`1px solid ${C.slate2}`,borderRadius:10}}>

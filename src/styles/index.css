@@ -1,0 +1,21 @@
+/**
+ * UniPortal — Master CSS Design System Entrypoint
+ */
+
+/* ── 1. Tokens & Resets ── */
+@import './variables.css';
+@import './base.css';
+
+/* ── 2. Core UI Components & Utilities ── */
+@import './components.css';
+@import './layout.css';
+@import './animations.css';
+
+/* ── 3. Feature Modular Stylesheets ── */
+@import './modules/auth.css';
+@import './modules/portal.css';
+@import './modules/dashboard.css';
+@import './modules/courses.css';
+@import './modules/grades.css';
+@import './modules/registration.css';
+@import './modules/admin.css';

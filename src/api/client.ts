@@ -31,7 +31,15 @@ client.interceptors.response.use(
   r => r,
   async (error: AxiosError) => {
     const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
-    if (error.response?.status !== 401 || original._retry) return Promise.reject(error);
+    const url = original?.url || '';
+    const isAuthEndpoint =
+      url.includes('/auth/login/') ||
+      url.includes('/auth/register/') ||
+      url.includes('/auth/token/refresh/');
+
+    if (error.response?.status !== 401 || original?._retry || isAuthEndpoint) {
+      return Promise.reject(error);
+    }
 
     original._retry = true;
     if (isRefreshing) {
@@ -45,7 +53,11 @@ client.interceptors.response.use(
 
     isRefreshing = true;
     const refresh = localStorage.getItem(REFRESH_KEY);
-    if (!refresh) { localStorage.clear(); window.location.href = '/login'; return Promise.reject(error); }
+    if (!refresh) {
+      localStorage.clear();
+      window.location.href = '/';
+      return Promise.reject(error);
+    }
 
     try {
       const { data } = await axios.post(`${BASE_URL}/auth/token/refresh/`, { refresh });
@@ -53,9 +65,13 @@ client.interceptors.response.use(
       onRefreshed(data.access);
       original.headers.Authorization = `Bearer ${data.access}`;
       return client(original);
-    } catch {
-      localStorage.clear(); window.location.href = '/login'; return Promise.reject(error);
-    } finally { isRefreshing = false; }
+    } catch (refreshError) {
+      localStorage.clear();
+      window.location.href = '/';
+      return Promise.reject(refreshError);
+    } finally {
+      isRefreshing = false;
+    }
   }
 );
 

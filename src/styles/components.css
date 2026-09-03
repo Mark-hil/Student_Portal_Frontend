@@ -1,0 +1,297 @@
+/**
+ * Reusable UI Component Styles (Buttons, Cards, Inputs, Badges, Modals, Tables, Spinners, Empty States)
+ */
+
+/* ── Spinner & Loader ── */
+.ui-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2.5px solid var(--slate-200);
+  border-top-color: var(--primary-600);
+  border-radius: var(--radius-full);
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+}
+
+.ui-spinner-sm {
+  width: 14px;
+  height: 14px;
+  border-width: 2px;
+}
+
+.ui-spinner-lg {
+  width: 32px;
+  height: 32px;
+  border-width: 3px;
+}
+
+/* ── Badges ── */
+.ui-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78125rem;
+  font-weight: 700;
+  padding: 4px 11px;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  transition: all var(--transition-fast);
+}
+
+.ui-badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ── Cards ── */
+.ui-card {
+  background: var(--bg-card);
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
+}
+
+.ui-card--hoverable {
+  cursor: pointer;
+}
+
+.ui-card--hoverable:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary-300);
+  transform: translateY(-1px);
+}
+
+/* ── Empty State ── */
+.ui-empty-state {
+  text-align: center;
+  padding: 52px 24px;
+  color: var(--slate-400);
+}
+
+.ui-empty-icon {
+  margin: 0 auto 14px;
+  opacity: 0.45;
+}
+
+.ui-empty-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--slate-700);
+  margin-bottom: 6px;
+  letter-spacing: -0.01em;
+}
+
+.ui-empty-sub {
+  font-size: 0.84375rem;
+  color: var(--slate-500);
+  max-width: 420px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+/* ── Progress Bar ── */
+.ui-progress-track {
+  background: rgba(15, 23, 42, 0.06);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  position: relative;
+}
+
+.ui-progress-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Section Header ── */
+.ui-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ui-section-title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: var(--slate-900);
+  letter-spacing: -0.02em;
+}
+
+.ui-section-sub {
+  margin: 4px 0 0;
+  font-size: 0.84375rem;
+  color: var(--slate-500);
+  line-height: 1.4;
+}
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  padding: 10px 18px;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-800) 100%);
+  color: var(--text-white);
+  box-shadow: var(--shadow-primary-glow);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-700) 100%);
+  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.45);
+  transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+  background: var(--primary-300);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-secondary {
+  background: var(--slate-100);
+  color: var(--slate-800);
+  border-color: var(--border-subtle);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--slate-200);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--slate-700);
+  border-color: var(--border-subtle);
+}
+
+.btn-outline:hover:not(:disabled) {
+  background: var(--slate-50);
+  border-color: var(--slate-400);
+}
+
+.btn-danger {
+  background: var(--rose-50);
+  color: var(--rose-600);
+  border-color: var(--rose-100);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: var(--rose-500);
+  color: var(--text-white);
+  border-color: var(--rose-500);
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 0.8125rem;
+  border-radius: var(--radius-sm);
+}
+
+.btn-lg {
+  padding: 12px 24px;
+  font-size: 0.9375rem;
+  border-radius: var(--radius-lg);
+}
+
+/* ── Form Inputs ── */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-label {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--slate-700);
+  letter-spacing: -0.01em;
+}
+
+.input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--slate-400);
+  pointer-events: none;
+}
+
+.form-input, .form-select {
+  width: 100%;
+  padding: 9px 12px;
+  font-size: 0.875rem;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border-subtle);
+  background: var(--slate-50);
+  color: var(--slate-900);
+  transition: all var(--transition-fast);
+  box-sizing: border-box;
+}
+
+.form-input.has-icon {
+  padding-left: 36px;
+}
+
+.form-input:focus, .form-select:focus {
+  background: var(--bg-card);
+  border-color: var(--primary-600);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+  outline: none;
+}
+
+/* ── Legacy & Modern Table Classes ── */
+.table-modern {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.875rem;
+}
+
+.table-modern th {
+  padding: 12px 16px;
+  background: var(--slate-50);
+  font-weight: 700;
+  color: var(--slate-600);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border-subtle);
+  text-align: left;
+}
+
+.table-modern td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--slate-800);
+}
+
+.table-modern tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table-modern tbody tr:hover {
+  background: rgba(241, 245, 249, 0.6);
+}

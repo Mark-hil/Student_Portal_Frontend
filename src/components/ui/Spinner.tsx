@@ -1,6 +1,11 @@
 import React from 'react';
-import { C } from '../../utils/theme';
 
-export function Spinner() {
-  return <div style={{width:18,height:18,border:`2px solid ${C.slate2}`,borderTopColor:C.indigo,borderRadius:'50%',animation:'spin .8s linear infinite'}}/>;
+interface SpinnerProps {
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+export function Spinner({ size = 'md', className = '' }: SpinnerProps) {
+  const sizeClass = size === 'sm' ? 'ui-spinner-sm' : size === 'lg' ? 'ui-spinner-lg' : '';
+  return <div className={`ui-spinner ${sizeClass} ${className}`.trim()} aria-label="Loading" />;
 }

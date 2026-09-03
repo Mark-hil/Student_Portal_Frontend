@@ -111,8 +111,24 @@ export interface ConflictCheck {
   conflicts:    Array<{ day: string; new_slot: string; conflict_with: string; existing_slot: string }>;
 }
 export interface RegistrationWindow {
-  id: string; semester: string; opens_at: string; closes_at: string;
-  is_active: boolean; is_open: boolean; detail?: string;
+  id?: string;
+  semester: string;
+  opens_at: string;
+  closes_at: string;
+  is_active: boolean;
+  is_open: boolean;
+  status_label?: 'open' | 'closed' | 'upcoming' | 'inactive';
+  detail?: string;
+}
+
+export interface RegistrationStats {
+  semester: string;
+  total_students: number;
+  registered_students: number;
+  unregistered_students: number;
+  registration_rate_pct: number;
+  total_active_enrollments: number;
+  avg_credits_per_registered: number;
 }
 
 // ── Assignments ───────────────────────────────────────────────────────────────

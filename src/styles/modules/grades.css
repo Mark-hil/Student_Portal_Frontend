@@ -1,0 +1,64 @@
+/**
+ * Modular Stylesheet — Grades, Transcript & GPA Engine (StudentGrades)
+ */
+
+.grades-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* GPA Breakdown Cards */
+.transcript-header-card {
+  background: linear-gradient(135deg, var(--bg-surface) 0%, #1e1b4b 100%);
+  border-radius: var(--radius-2xl);
+  padding: 28px 32px;
+  color: var(--text-white);
+  border: 1px solid var(--border-glass);
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@media (max-width: 768px) {
+  .transcript-header-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 20px;
+  }
+}
+
+.grade-badge-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.125rem;
+  letter-spacing: -0.02em;
+}
+
+.grade-a { background: var(--emerald-50); color: var(--emerald-600); border: 1.5px solid var(--emerald-500); }
+.grade-b { background: var(--primary-50); color: var(--primary-600); border: 1.5px solid var(--primary-500); }
+.grade-c { background: var(--amber-50); color: var(--amber-600); border: 1.5px solid var(--amber-500); }
+.grade-f { background: var(--rose-50); color: var(--rose-600); border: 1.5px solid var(--rose-500); }
+
+/* Progress Meter */
+.gpa-progress-track {
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--slate-100);
+  overflow: hidden;
+  position: relative;
+}
+
+.gpa-progress-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, var(--primary-500) 0%, var(--emerald-500) 100%);
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}

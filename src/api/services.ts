@@ -48,6 +48,38 @@ export const coursesApi = {
   checkConflict:      (courseId: string) => client.get<ConflictCheck>(`/courses/${courseId}/check-conflict/`),
   registrationWindow: (semester?: string) =>
     client.get<RegistrationWindow>('/courses/registration-window/', { params: semester ? { semester } : {} }),
+  manageRegistrationWindow: (data: { semester?: string; opens_at?: string; closes_at?: string; extend_days?: number; reopen?: boolean; is_active?: boolean }) =>
+    client.post<RegistrationWindow>('/courses/registration-window/manage/', data),
+  registrationStats: (semester?: string) =>
+    client.get<import('../types').RegistrationStats>('/courses/reports/registration-stats/', { params: semester ? { semester } : {} }),
+  downloadRegisteredCSV: async (semester?: string) => {
+    const res = await client.get('/courses/reports/registered-csv/', {
+      params: semester ? { semester } : {},
+      responseType: 'blob',
+    });
+    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'text/csv;charset=utf-8;' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `registered_students_${semester || 'all'}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    link.parentNode?.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  },
+  downloadUnregisteredCSV: async (semester?: string) => {
+    const res = await client.get('/courses/reports/unregistered-csv/', {
+      params: semester ? { semester } : {},
+      responseType: 'blob',
+    });
+    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'text/csv;charset=utf-8;' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `unregistered_students_${semester || 'all'}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    link.parentNode?.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  },
   enrollments:        () => client.get<PaginatedResponse<Enrollment>>('/courses/enrollments/'),
   drop:               (enrollmentId: string, reason?: string) =>
     client.post(`/courses/enrollments/${enrollmentId}/drop/`, { reason }),
@@ -62,11 +94,23 @@ export const gradesApi = {
     client.get<PaginatedResponse<Grade>>('/grades/', { params }),
   gpaSummary:    () => client.get<GPASummary>('/grades/gpa-summary/'),
   transcript:    () => client.get<TranscriptSemester[]>('/grades/transcript/'),
+  downloadTranscriptPdf: async () => {
+    const res = await client.get('/grades/transcript/pdf/', { responseType: 'blob' });
+    const blob = new Blob([res.data], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'unofficial_transcript.pdf';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  },
   courseSummary: () => client.get<CourseSummaryRow[]>('/grades/course-summary/'),
   recompute:     (semester?: string) => client.post('/grades/recompute/', { semester }),
 };
 
-// ── Assignments — Lecturer ────────────────────────────────────────────────────
+// ── Assignments — Lecturer + Student ──────────────────────────────────────────
 export const assignmentsApi = {
   list:   (params?: { course?: string }) =>
     client.get<PaginatedResponse<Assignment>>('/grades/assignments/', { params }),
@@ -79,6 +123,12 @@ export const assignmentsApi = {
   delete: (id: string) => client.delete(`/grades/assignments/${id}/`),
   togglePublish: (id: string) =>
     client.post<{ is_published: boolean }>(`/grades/assignments/${id}/publish/`),
+  submit: (id: string, data: { file?: string; text_content?: string }) =>
+    client.post(`/grades/assignments/${id}/submit/`, data),
+  mySubmission: (id: string) =>
+    client.get(`/grades/assignments/${id}/my-submission/`),
+  submissions: (id: string) =>
+    client.get(`/grades/assignments/${id}/submissions/`),
 };
 
 // ── Grade Batches — Lecturer + Officer ────────────────────────────────────────
@@ -92,6 +142,27 @@ export const batchesApi = {
     client.post(`/grades/batches/${batchId}/upload/`, { grades }),
   submit: (batchId: string, note?: string) =>
     client.patch<GradeBatch>(`/grades/batches/${batchId}/submit/`, { note }),
+  exportCsvUrl: (batchId: string) =>
+    `${client.defaults.baseURL}/grades/batches/${batchId}/export-csv/`,
+  exportCsv: async (batchId: string, filename = 'grades.csv') => {
+    const res = await client.get(`/grades/batches/${batchId}/export-csv/`, { responseType: 'blob' });
+    const blob = new Blob([res.data], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  },
+  importCsv: (batchId: string, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return client.post(`/grades/batches/${batchId}/import-csv/`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
   // Officer
   approve: (batchId: string) =>
     client.patch<GradeBatch>(`/grades/batches/${batchId}/approve/`),
