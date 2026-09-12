@@ -36,15 +36,23 @@ export function StudentGrades() {
     staleTime: 10_000,
   });
 
+  const { data: courseSummaries = [], refetch: refetchSummaries } = useQuery({
+    queryKey: ['grades', 'course-summary'],
+    queryFn: () => gradesApi.courseSummary().then((r) => r.data),
+    staleTime: 10_000,
+  });
+
   const recompute = useMutation({
     mutationFn: () => gradesApi.recompute(),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['gpa-summary'] });
       qc.invalidateQueries({ queryKey: ['transcript'] });
       qc.invalidateQueries({ queryKey: ['grades'] });
+      qc.invalidateQueries({ queryKey: ['grades', 'course-summary'] });
       refetchGpa();
       refetchTranscript();
       refetchGrades();
+      refetchSummaries();
       toast.success('GPA and Transcripts refreshed');
     },
   });
@@ -243,6 +251,71 @@ export function StudentGrades() {
               </div>
             ))}
           </div>
+
+          {/* In-Progress Coursework Grade Breakdown */}
+          {courseSummaries.length > 0 && (
+            <Card style={{ padding: '22px 26px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <div>
+                  <h3 style={{ fontSize: 16, fontWeight: 800, color: C.slate9, margin: 0 }}>
+                    In-Progress Coursework Grades & Standing
+                  </h3>
+                  <div style={{ fontSize: 12.5, color: C.slate5, marginTop: 2 }}>
+                    Real-time weighted average calculated from graded assignments, quizzes, and labs
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
+                {courseSummaries.map((cs: any) => (
+                  <div
+                    key={cs.course_id}
+                    style={{
+                      background: '#f8fafc',
+                      border: `1px solid ${C.slate2}`,
+                      borderRadius: 14,
+                      padding: '16px 18px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <div>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: C.indigo, background: C.indigoL, padding: '2px 7px', borderRadius: 5 }}>
+                          {cs.course_code}
+                        </span>
+                        <h4 style={{ fontSize: 14, fontWeight: 700, color: C.slate9, margin: '4px 0 0' }}>
+                          {cs.course_title}
+                        </h4>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <span
+                          style={{
+                            fontSize: 15,
+                            fontWeight: 800,
+                            padding: '3px 9px',
+                            borderRadius: 8,
+                            background: cs.predicted_grade ? '#e0e7ff' : C.slate1,
+                            color: cs.predicted_grade ? C.indigo : C.slate6,
+                          }}
+                        >
+                          {cs.predicted_grade || 'Pending'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{ fontSize: 12, color: C.slate5, marginBottom: 8 }}>
+                      Weighted Score: <strong>{cs.current_percentage != null ? `${cs.current_percentage}%` : '—'}</strong> · {cs.total_weight_graded}% coursework graded
+                    </div>
+
+                    <ProgressBar
+                      value={cs.current_percentage != null ? Number(cs.current_percentage) : 0}
+                      color={Number(cs.current_percentage) >= 80 ? C.green : Number(cs.current_percentage) >= 65 ? C.amber : '#dc2626'}
+                      h={6}
+                    />
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
 
           {/* Semester Progress History */}
           {(gpa?.semester_history ?? []).length > 0 && (

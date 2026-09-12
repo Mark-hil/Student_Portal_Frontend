@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   BookOpen, Users, ChevronRight, Calendar, Clock, MapPin,
-  LayoutGrid, CalendarRange
+  LayoutGrid, CalendarRange, Download
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { C } from '../../utils/theme';
 import { coursesApi } from '../../api/services';
 import type { Course } from '../../types';
@@ -121,8 +122,56 @@ export function CourseList({ onSelect }: { onSelect: (id: string) => void }) {
                     </div>
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: C.indigo, fontSize: 12, fontWeight: 600 }}>
-                  Manage Course <ChevronRight size={16} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      coursesApi.exportRosterCsv(c.id, `${c.code}_student_roster.csv`);
+                      toast.success(`Exporting roster for ${c.code}`);
+                    }}
+                    title="Export Course Student Roster CSV"
+                    style={{
+                      background: '#f8fafc',
+                      border: `1px solid ${C.slate2}`,
+                      borderRadius: 6,
+                      padding: '5px 10px',
+                      fontSize: 11.5,
+                      fontWeight: 600,
+                      color: C.slate7,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Download size={13} /> Roster
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      coursesApi.exportGradesCsv(c.id, `${c.code}_grades.csv`);
+                      toast.success(`Exporting grades for ${c.code}`);
+                    }}
+                    title="Export Course Grade Sheet CSV"
+                    style={{
+                      background: '#f8fafc',
+                      border: `1px solid ${C.slate2}`,
+                      borderRadius: 6,
+                      padding: '5px 10px',
+                      fontSize: 11.5,
+                      fontWeight: 600,
+                      color: C.slate7,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Download size={13} /> Grades
+                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: C.indigo, fontSize: 12, fontWeight: 600 }}>
+                    Manage Course <ChevronRight size={16} />
+                  </div>
                 </div>
               </Card>
             );

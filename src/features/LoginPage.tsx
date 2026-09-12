@@ -8,7 +8,7 @@ import React, { useState, FormEvent } from 'react';
 import {
   GraduationCap, Mail, Lock, User, Eye, EyeOff, AlertCircle,
   ShieldCheck, Calendar, Award, Clock, ArrowRight,
-  BookOpen, Shield
+  BookOpen, Shield, Coins
 } from 'lucide-react';
 import client from '../api/client';
 
@@ -34,6 +34,15 @@ const DEMO_ACCOUNTS = [
     color: 'var(--violet-500)',
     bg: 'var(--violet-50)',
     border: '#ddd6fe',
+  },
+  {
+    role: 'Finance Officer',
+    label: 'Finance Directorate',
+    email: 'finance@uniportal.edu',
+    icon: Coins,
+    color: '#d97706',
+    bg: '#fffbeb',
+    border: '#fde68a',
   },
   {
     role: 'Staff Officer',

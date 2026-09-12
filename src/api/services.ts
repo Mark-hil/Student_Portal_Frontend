@@ -9,6 +9,8 @@ import type {
   BulkRegistrationResult, TranscriptSemester,
   CourseSummaryRow, RegistrationWindow, ConflictCheck,
   Assignment, GradeBatch, GradeBatchListItem,
+  Lesson, Submission, RosterData,
+  StudentStatement, PaymentRecord, SemesterFeeStructure, BursarOverview,
 } from '../types';
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -20,12 +22,37 @@ export const authApi = {
   logout:   (refresh?: string) => client.post('/auth/logout/', { refresh }),
 };
 
+export const downloadCsvBlob = (data: any, defaultFilename: string) => {
+  const url = window.URL.createObjectURL(new Blob([data], { type: 'text/csv;charset=utf-8;' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', defaultFilename);
+  document.body.appendChild(link);
+  link.click();
+  link.parentNode?.removeChild(link);
+  window.URL.revokeObjectURL(url);
+};
+
 // ── Users ─────────────────────────────────────────────────────────────────────
 export const usersApi = {
   me:             () => client.get<User>('/users/me/'),
   updateMe:       (data: Partial<User>) => client.patch<User>('/users/me/', data),
+  uploadAvatar:   (file: File) => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    return client.post<User>('/users/me/avatar/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
   changePassword: (current: string, newPass: string) =>
     client.post('/users/me/change-password/', { current_password: current, new_password: newPass }),
+  exportStudentsCsv: async (params?: { role?: string; search?: string }, filename = 'students_directory.csv') => {
+    const res = await client.get('/users/manage/export-students/', {
+      params,
+      responseType: 'blob',
+    });
+    downloadCsvBlob(res.data, filename);
+  },
 };
 
 // ── Admin ─────────────────────────────────────────────────────────────────────
@@ -33,6 +60,24 @@ export const adminApi = {
   stats: () => client.get<{ total_students: number; total_instructors: number; total_courses: number; pending_batches: number; }>('/users/stats/'),
   listUsers: (params?: Record<string, string>) => client.get<PaginatedResponse<User>>('/users/manage/', { params }),
   createUser: (data: any) => client.post<User>('/users/manage/', data),
+  updateUser: (id: string, data: Partial<User>) => client.patch<User>(`/users/manage/${id}/`, data),
+  toggleUserStatus: (id: string) => client.post<{ status: string; is_active: boolean; user: User }>(`/users/manage/${id}/toggle-status/`),
+  resetUserPassword: (id: string, newPassword?: string) =>
+    client.post<{ status: string; detail: string }>(`/users/manage/${id}/reset-password/`, { new_password: newPassword }),
+  uploadUserAvatar: (id: string, file: File) => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    return client.post<User>(`/users/manage/${id}/avatar/`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  exportStudentsCsv: async (params?: { role?: string; search?: string }, filename = 'students_directory.csv') => {
+    const res = await client.get('/users/manage/export-students/', {
+      params,
+      responseType: 'blob',
+    });
+    downloadCsvBlob(res.data, filename);
+  },
 };
 
 // ── Courses ───────────────────────────────────────────────────────────────────
@@ -86,6 +131,22 @@ export const coursesApi = {
   enrollmentHistory:  () => client.get<PaginatedResponse<Enrollment>>('/courses/enrollments/history/'),
   create:             (data: any) => client.post<Course>('/courses/', data),
   update:             (id: string, data: any) => client.patch<Course>(`/courses/${id}/`, data),
+  delete:             (id: string) => client.delete(`/courses/${id}/`),
+  roster:             (courseId: string) => client.get<RosterData>(`/courses/${courseId}/roster/`),
+  exportRosterCsv:    async (courseId: string, filename = 'course_roster.csv') => {
+    const res = await client.get(`/courses/${courseId}/export-roster/`, { responseType: 'blob' });
+    downloadCsvBlob(res.data, filename);
+  },
+  exportGradesCsv:    async (courseId: string, filename = 'course_grade_sheet.csv') => {
+    const res = await client.get(`/courses/${courseId}/export-grades/`, { responseType: 'blob' });
+    downloadCsvBlob(res.data, filename);
+  },
+  lessons:            (courseId?: string) => client.get<Lesson[]>('/courses/lessons/', { params: courseId ? { course: courseId } : {} }),
+  createLesson:       (data: Partial<Lesson>) => client.post<Lesson>('/courses/lessons/', data),
+  updateLesson:       (id: string, data: Partial<Lesson>) => client.patch<Lesson>(`/courses/lessons/${id}/`, data),
+  deleteLesson:       (id: string) => client.delete(`/courses/lessons/${id}/`),
+  toggleLessonProgress:(lessonId: string) =>
+    client.post<{ lesson_id: string; completed: boolean; progress_pct: number }>(`/courses/lessons/${lessonId}/toggle-progress/`),
 };
 
 // ── Grades — Student ──────────────────────────────────────────────────────────
@@ -124,11 +185,13 @@ export const assignmentsApi = {
   togglePublish: (id: string) =>
     client.post<{ is_published: boolean }>(`/grades/assignments/${id}/publish/`),
   submit: (id: string, data: { file?: string; text_content?: string }) =>
-    client.post(`/grades/assignments/${id}/submit/`, data),
+    client.post<Submission>(`/grades/assignments/${id}/submit/`, data),
   mySubmission: (id: string) =>
-    client.get(`/grades/assignments/${id}/my-submission/`),
+    client.get<Submission | null>(`/grades/assignments/${id}/my-submission/`),
   submissions: (id: string) =>
-    client.get(`/grades/assignments/${id}/submissions/`),
+    client.get<Submission[]>(`/grades/assignments/${id}/submissions/`),
+  gradeSubmission: (assignmentId: string, submissionId: string, score: number, feedback?: string) =>
+    client.post<Submission>(`/grades/assignments/${assignmentId}/grade-submission/`, { submission_id: submissionId, score, feedback }),
 };
 
 // ── Grade Batches — Lecturer + Officer ────────────────────────────────────────
@@ -189,5 +252,108 @@ export const filesApi = {
     return client.post('/files/upload/', form, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
+  },
+};
+
+// ── Financials & Billing (Ghana Cedis GH₵) ──────────────────────────────────
+export const financialsApi = {
+  // Student endpoints
+  getMyStatement: () =>
+    client.get<StudentStatement>('/financials/my-statement/'),
+
+  payMoMo: (data: { amount: string | number; provider: string; phone: string; reference?: string }) =>
+    client.post<PaymentRecord>('/financials/pay/momo/', data),
+
+  submitBankSlip: (formData: FormData) =>
+    client.post<PaymentRecord>('/financials/pay/bank-slip/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+
+  getReceiptPdfBlob: (paymentId: number) =>
+    client.get(`/financials/payments/${paymentId}/receipt/`, {
+      responseType: 'blob',
+    }),
+
+  // Bank direct integration / simulator
+  bankLookup: (studentId: string) =>
+    client.get<{ student_id: string; student_name: string; program: string; semester: string; total_billed: string | number; total_paid: string | number; balance_due: string | number; currency: string; status: string; has_hold: boolean }>(
+      '/financials/bank/lookup/',
+      { params: { student_id: studentId } }
+    ),
+
+  bankNotify: (data: {
+    student_id: string;
+    amount: string | number;
+    bank_name: string;
+    teller_ref?: string;
+    bank_reference?: string;
+    branch?: string;
+    teller_id?: string;
+    depositor_name?: string;
+    notes?: string;
+  }) => {
+    const ref = data.teller_ref || data.bank_reference || `BNK-${Date.now().toString().slice(-6)}`;
+    const payload = {
+      ...data,
+      teller_ref: ref,
+      bank_reference: ref,
+    };
+    return client.post<{
+      status: string;
+      message: string;
+      receipt_number: string;
+      balance_remaining?: string | number;
+      current_balance?: string | number;
+      currency?: string;
+      payment?: PaymentRecord;
+    }>('/financials/bank/notify/', payload);
+  },
+
+  // Bursar / Accounts Admin endpoints
+  getAdminOverview: () =>
+    client.get<BursarOverview>('/financials/admin/overview/'),
+
+  verifySlip: (paymentId: number, approve: boolean, notes?: string) =>
+    client.post<PaymentRecord>(`/financials/admin/verify-slip/${paymentId}/`, { approve, notes }),
+
+  adjustStatement: (data: { student_id: string; semester?: string; amount: string | number; reason: string }) =>
+    client.post<{ status: string; detail: string; bursary_total: string | number; new_balance: string | number }>(
+      '/financials/admin/adjust/',
+      data
+    ),
+
+  getFeeStructure: () =>
+    client.get<SemesterFeeStructure[]>('/financials/admin/fee-structure/'),
+
+  getFeeStructures: (params?: { semester?: string; level?: string }) =>
+    client.get<SemesterFeeStructure[]>('/financials/admin/fee-structure/', { params }),
+
+  updateFeeStructure: (data: Partial<SemesterFeeStructure> & { recalculate_students?: boolean }) =>
+    client.post<{ message: string; fee_structure: SemesterFeeStructure; all_structures: SemesterFeeStructure[] }>(
+      '/financials/admin/fee-structure/',
+      data
+    ),
+
+  exportStatementsCsv: async (params?: { level?: string; status?: string }, filename = 'financial_statements.csv') => {
+    const res = await client.get('/financials/admin/export/statements/', {
+      params,
+      responseType: 'blob',
+    });
+    downloadCsvBlob(res.data, filename);
+  },
+
+  exportPaymentsCsv: async (params?: { channel?: string }, filename = 'payments_stream.csv') => {
+    const res = await client.get('/financials/admin/export/payments/', {
+      params,
+      responseType: 'blob',
+    });
+    downloadCsvBlob(res.data, filename);
+  },
+
+  exportMyStatementCsv: async (filename = 'my_statement_of_account.csv') => {
+    const res = await client.get('/financials/statement/export-csv/', {
+      responseType: 'blob',
+    });
+    downloadCsvBlob(res.data, filename);
   },
 };

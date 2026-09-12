@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   GraduationCap, Edit3, Key, Shield, CheckCircle2, Building, Mail,
-  FileText, Users, ClipboardCheck, X, Check, Loader2
+  FileText, Users, ClipboardCheck, X, Check, Loader2, Camera
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { C, gpaColor } from '../../utils/theme';
 import { gradesApi, usersApi, adminApi, batchesApi, coursesApi } from '../../api/services';
 import type { User as UserType } from '../../types';
 import { Card } from '../../components/ui/Card';
+import { useAuthStore } from '../../store/authStore';
 
 interface Props {
   user: UserType;
@@ -18,9 +19,11 @@ interface Props {
 
 export function ProfileView({ user, onUserUpdate, onNav }: Props) {
   const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   // Edit Profile Form State
   const [editForm, setEditForm] = useState({
@@ -144,6 +147,28 @@ export function ProfileView({ user, onUserUpdate, onNav }: Props) {
     }
   };
 
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+    setIsUploadingAvatar(true);
+    try {
+      const res = await usersApi.uploadAvatar(file);
+      useAuthStore.getState().setUser(res.data);
+      if (onUserUpdate) onUserUpdate(res.data);
+      queryClient.invalidateQueries({ queryKey: ['me'] });
+      toast.success('Profile picture updated to Cloudinary (uniportal-profile picture)!');
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Failed to upload profile picture.');
+    } finally {
+      setIsUploadingAvatar(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   // Theming based on role
   const roleTheme = isStudent
     ? { gradient: `linear-gradient(135deg, ${C.navy}, #1e1b4b)`, accent: C.indigo, label: 'Undergraduate Student', badgeBg: 'rgba(99, 102, 241, 0.25)', badgeText: '#c7d2fe' }
@@ -168,24 +193,92 @@ export function ProfileView({ user, onUserUpdate, onNav }: Props) {
       >
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20, position: 'relative', zIndex: 1, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-            <div
-              style={{
-                width: 76,
-                height: 76,
-                borderRadius: '50%',
-                background: roleTheme.accent,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 26,
-                fontWeight: 800,
-                color: '#fff',
-                boxShadow: '0 4px 14px rgba(0,0,0,0.3)',
-                flexShrink: 0,
-              }}
-            >
-              {(user.first_name?.[0] ?? '') + (user.last_name?.[0] ?? '')}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+              <div
+                onClick={() => !isUploadingAvatar && fileInputRef.current?.click()}
+                title="Click to upload profile photo to Cloudinary"
+                style={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: '50%',
+                  background: roleTheme.accent,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 26,
+                  fontWeight: 800,
+                  color: '#fff',
+                  boxShadow: '0 4px 14px rgba(0,0,0,0.3)',
+                  flexShrink: 0,
+                  cursor: 'pointer',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  border: '3px solid rgba(255,255,255,0.4)',
+                }}
+              >
+                {user.avatar ? (
+                  <img
+                    src={user.avatar}
+                    alt={user.full_name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  (user.first_name?.[0] ?? '') + (user.last_name?.[0] ?? '')
+                )}
+                
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background: 'rgba(0,0,0,0.45)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    opacity: isUploadingAvatar ? 1 : 0,
+                    transition: 'opacity 0.2s',
+                  }}
+                  onMouseEnter={(e) => { if (!isUploadingAvatar) e.currentTarget.style.opacity = '1'; }}
+                  onMouseLeave={(e) => { if (!isUploadingAvatar) e.currentTarget.style.opacity = '0'; }}
+                >
+                  {isUploadingAvatar ? (
+                    <Loader2 size={24} className="animate-spin" color="#fff" />
+                  ) : (
+                    <Camera size={22} color="#fff" />
+                  )}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => !isUploadingAvatar && fileInputRef.current?.click()}
+                disabled={isUploadingAvatar}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  padding: '4px 12px',
+                  borderRadius: 20,
+                  border: '1px solid rgba(255,255,255,0.45)',
+                  background: 'rgba(255,255,255,0.2)',
+                  color: '#fff',
+                  fontSize: 11.5,
+                  fontWeight: 700,
+                  cursor: isUploadingAvatar ? 'not-allowed' : 'pointer',
+                  backdropFilter: 'blur(6px)',
+                  transition: 'background 0.2s',
+                }}
+              >
+                {isUploadingAvatar ? <Loader2 size={12} className="animate-spin" /> : <Camera size={12} />}
+                {isUploadingAvatar ? 'Uploading...' : 'Upload Photo'}
+              </button>
             </div>
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={handleAvatarChange}
+            />
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                 <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-.02em', color: '#fff', margin: 0 }}>
@@ -663,6 +756,43 @@ export function ProfileView({ user, onUserUpdate, onNav }: Props) {
             </div>
 
             <form onSubmit={handleSaveProfile} style={{ padding: 26 }}>
+              {/* Profile Photo Uploader Section */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 16px', background: C.slate0, borderRadius: 12, marginBottom: 18, border: `1px solid ${C.slate2}` }}>
+                <div style={{ width: 56, height: 56, borderRadius: '50%', background: C.indigo, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 20, fontWeight: 800, flexShrink: 0, border: `2px solid ${C.indigoL}` }}>
+                  {user.avatar ? (
+                    <img src={user.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    (user.first_name?.[0] ?? '') + (user.last_name?.[0] ?? '')
+                  )}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: C.slate9, marginBottom: 2 }}>Profile Photo</div>
+                  <div style={{ fontSize: 11.5, color: C.slate5 }}>Stored in Cloudinary: <strong style={{ color: C.indigo }}>uniportal-profile picture</strong></div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingAvatar}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: 8,
+                    background: '#fff',
+                    border: `1px solid ${C.slate3}`,
+                    cursor: isUploadingAvatar ? 'not-allowed' : 'pointer',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: C.indigo,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                  }}
+                >
+                  {isUploadingAvatar ? <Loader2 size={13} className="animate-spin" /> : <Camera size={13} />}
+                  {isUploadingAvatar ? 'Uploading...' : 'Change Photo'}
+                </button>
+              </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: 12.5, fontWeight: 700, color: C.slate7, marginBottom: 6 }}>First Name</label>

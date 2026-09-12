@@ -1,0 +1,543 @@
+/**
+ * UniPortal Modular Stylesheet — Student Financials & Bursary Management
+ * Pure Vanilla CSS with Rich Glassmorphism, Micro-interactions, and Tailored Ghanaian Palettes.
+ */
+
+/* ── Container Layout ── */
+.fin-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding-bottom: 48px;
+}
+
+/* ── Hero Gradient Atmospheric Banner ── */
+.fin-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-2xl);
+  padding: 32px 36px;
+  background: linear-gradient(135deg, #090d16 0%, #1e1b4b 45%, #0f172a 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.5);
+  color: #ffffff;
+}
+
+@media (max-width: 768px) {
+  .fin-hero {
+    padding: 24px 20px;
+  }
+}
+
+.fin-hero-glow-1 {
+  position: absolute;
+  top: -40%;
+  right: -10%;
+  width: 360px;
+  height: 360px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.35) 0%, transparent 70%);
+  filter: blur(60px);
+  pointer-events: none;
+}
+
+.fin-hero-glow-2 {
+  position: absolute;
+  bottom: -30%;
+  left: 25%;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.22) 0%, transparent 70%);
+  filter: blur(70px);
+  pointer-events: none;
+}
+
+.fin-hero-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.fin-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: rgba(99, 102, 241, 0.25);
+  border: 1px solid rgba(165, 180, 252, 0.35);
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #c7d2fe;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.fin-hero-title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 10px 0 6px;
+  color: #ffffff;
+}
+
+@media (max-width: 640px) {
+  .fin-hero-title {
+    font-size: 22px;
+  }
+}
+
+.fin-hero-subtitle {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.75);
+  max-width: 620px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.fin-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ── Registration Hold Alerts ── */
+.fin-alert-banner {
+  margin-top: 20px;
+  padding: 16px 20px;
+  border-radius: var(--radius-xl);
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: fadeIn 0.25s ease;
+}
+
+.fin-alert-hold {
+  background: rgba(239, 68, 68, 0.16);
+  border: 1.5px solid rgba(248, 113, 113, 0.45);
+  color: #fecaca;
+}
+
+.fin-alert-clear {
+  background: rgba(16, 185, 129, 0.16);
+  border: 1.5px solid rgba(52, 211, 153, 0.45);
+  color: #a7f3d0;
+}
+
+/* ── Key Financial Stat Cards Grid ── */
+.fin-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+}
+
+.fin-stat-card {
+  background: #ffffff;
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  border-radius: var(--radius-xl);
+  padding: 22px;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.fin-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -4px rgba(0, 0, 0, 0.08);
+}
+
+.fin-stat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.fin-stat-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+}
+
+.fin-stat-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 99px;
+}
+
+.fin-stat-badge-paid {
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+
+.fin-stat-badge-arrears {
+  background: #fff1f2;
+  color: #e11d48;
+  border: 1px solid #fecdd3;
+}
+
+.fin-stat-val {
+  font-size: 28px;
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.fin-stat-val.emerald {
+  color: #059669;
+}
+
+.fin-stat-val.amber {
+  color: #d97706;
+}
+
+.fin-stat-val.indigo {
+  color: #4f46e5;
+}
+
+.fin-stat-sub {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 6px;
+}
+
+/* ── Content Grid Sections ── */
+.fin-split-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 992px) {
+  .fin-split-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Card Panel Container ── */
+.fin-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.03);
+}
+
+.fin-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.fin-card-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.fin-card-sub {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 3px;
+}
+
+/* ── Fee Breakdown List Table ── */
+.fin-fee-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid #f1f5f9;
+  gap: 16px;
+}
+
+.fin-fee-row:last-child {
+  border-bottom: none;
+}
+
+.fin-fee-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.fin-fee-desc {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.fin-fee-amount {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+.fin-fee-total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 16px;
+  margin-top: 8px;
+  border-top: 2px solid #e2e8f0;
+}
+
+/* ── Payment Channels Cards ── */
+.fin-channel-box {
+  padding: 14px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-lg);
+  margin-bottom: 12px;
+  transition: all 0.15s ease;
+}
+
+.fin-channel-box:hover {
+  border-color: #cbd5e1;
+  background: #f1f5f9;
+}
+
+/* ── Data Tables ── */
+.fin-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: var(--radius-lg);
+}
+
+.fin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  text-align: left;
+}
+
+.fin-table th {
+  padding: 12px 14px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+}
+
+.fin-table td {
+  padding: 14px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.fin-table tr:hover td {
+  background: #f8fafc;
+}
+
+/* ── Buttons & Interactive Elements ── */
+.fin-btn-gold {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #090d16;
+  font-weight: 800;
+  font-size: 13px;
+  border-radius: var(--radius-lg);
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.fin-btn-gold:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(245, 158, 11, 0.45);
+}
+
+.fin-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: var(--primary-600, #4f46e5);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 13px;
+  border-radius: var(--radius-lg);
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+  transition: background 0.15s;
+}
+
+.fin-btn-primary:hover {
+  background: var(--primary-700, #4338ca);
+}
+
+.fin-btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 700;
+  font-size: 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid #cbd5e1;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.fin-btn-outline:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.fin-btn-receipt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #eef2ff;
+  color: #4338ca;
+  font-weight: 700;
+  font-size: 11px;
+  border-radius: var(--radius-md);
+  border: 1px solid #c7d2fe;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.fin-btn-receipt:hover {
+  background: #e0e7ff;
+}
+
+/* ── Modal Design ── */
+.fin-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 16px;
+  animation: fadeIn 0.15s ease;
+}
+
+.fin-modal-card {
+  background: #ffffff;
+  border-radius: 24px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  width: 100%;
+  max-width: 640px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fin-modal-header {
+  padding: 22px 28px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.fin-modal-tabs {
+  display: flex;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0 24px;
+  background: #ffffff;
+  gap: 8px;
+}
+
+.fin-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  border: none;
+  background: none;
+  border-bottom: 2.5px solid transparent;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.fin-tab-btn.active {
+  color: var(--primary-600, #4f46e5);
+  border-bottom-color: var(--primary-600, #4f46e5);
+}
+
+.fin-modal-body {
+  padding: 24px 28px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* ── Developer API Integration Docs Box ── */
+.fin-api-code-block {
+  background: #090d16;
+  border: 1px solid #1e293b;
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  color: #f8fafc;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 12px;
+  overflow-x: auto;
+  position: relative;
+}
+
+.fin-copy-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  padding: 4px 10px;
+  font-size: 11px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.fin-copy-badge:hover {
+  background: rgba(255, 255, 255, 0.24);
+}

@@ -82,6 +82,17 @@ export function CourseManagement() {
     }
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => coursesApi.delete(id),
+    onSuccess: () => {
+      toast.success('Course archived or removed from catalog.');
+      qc.invalidateQueries({ queryKey: ['courses'] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.detail || 'Failed to archive course.');
+    }
+  });
+
   const preparePayload = () => {
     const payload: any = {
       code: newCourse.code,
@@ -458,8 +469,18 @@ export function CourseManagement() {
                     <td style={{ padding: '14px 18px' }}>
                       <Badge label={c.status} color={c.status === 'active' ? C.greenL : C.slate1} text={c.status === 'active' ? C.green : C.slate5} />
                     </td>
-                    <td style={{ padding: '14px 18px' }}>
+                    <td style={{ padding: '14px 18px', whiteSpace: 'nowrap' }}>
                       <button onClick={() => openEditModal(c)} style={{ background: 'transparent', border: 'none', color: C.indigo, cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>Edit</button>
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`Archive or delete course "${c.code} — ${c.title}"?`)) {
+                            deleteMutation.mutate(c.id);
+                          }
+                        }}
+                        style={{ background: 'transparent', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: 13, fontWeight: 700, marginLeft: 12 }}
+                      >
+                        Archive
+                      </button>
                     </td>
                   </tr>
                 ))}

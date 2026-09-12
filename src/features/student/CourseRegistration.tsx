@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Check, Search, BookOpen, Loader2, Calendar, Clock, AlertCircle, AlertTriangle, Lock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { C } from '../../utils/theme';
-import { coursesApi } from '../../api/services';
+import { coursesApi, financialsApi } from '../../api/services';
 import { Card } from '../../components/ui/Card';
 import { ProgressBar } from '../../components/ui/ProgressBar';
 import { Spinner } from '../../components/ui/Spinner';
@@ -17,6 +17,12 @@ export function CourseRegistration() {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  const { data: statement } = useQuery({
+    queryKey: ['financial-statement'],
+    queryFn: () => financialsApi.getMyStatement().then(r => r.data),
+    staleTime: 30_000,
+  });
 
   const { data: windowData, isLoading: isWindowLoading } = useQuery({
     queryKey: ['courses', 'registration-window'],
@@ -36,6 +42,7 @@ export function CourseRegistration() {
     staleTime: 30_000,
   });
 
+  const hasFinancialHold = Boolean(statement?.has_active_hold);
   const isRegistrationOpen = windowData ? windowData.is_open : true;
 
   const activeEnrolledIds = new Set(
@@ -59,10 +66,13 @@ export function CourseRegistration() {
     }
   });
 
+  const [conflictWarning, setConflictWarning] = useState<{ course: any; conflictingWith: any[] } | null>(null);
+
   const singleMut = useMutation({
     mutationFn: (id: string) => coursesApi.register(id).then(r => r.data),
     onSuccess: (data) => {
       toast.success(`Successfully enrolled in ${data.course?.code || 'course'}!`);
+      setConflictWarning(null);
       qc.invalidateQueries({ queryKey: ['courses'] });
       qc.invalidateQueries({ queryKey: ['courses', 'mine'] });
       qc.invalidateQueries({ queryKey: ['courses', 'enrollments'] });
@@ -72,6 +82,22 @@ export function CourseRegistration() {
       toast.error(err.response?.data?.detail || err.response?.data?.course_id || 'Failed to enroll.');
     }
   });
+
+  const handleEnrollClick = async (c: any) => {
+    try {
+      const res = await coursesApi.checkConflict(c.id);
+      if (res.data.has_conflict) {
+        setConflictWarning({
+          course: c,
+          conflictingWith: (res.data as any).conflicts || [],
+        });
+        return;
+      }
+    } catch {
+      // Proceed if conflict check endpoint has no conflicts
+    }
+    singleMut.mutate(c.id);
+  };
 
   const catalog = catalogData?.results ?? [];
   const filtered = catalog.filter((c: any) =>
@@ -98,6 +124,49 @@ export function CourseRegistration() {
 
   return (
     <div>
+      {/* ── Financial Hold Warning Banner ── */}
+      {hasFinancialHold && (
+        <div
+          style={{
+            marginBottom: 20,
+            padding: '16px 20px',
+            borderRadius: 14,
+            background: 'linear-gradient(135deg, #fef2f2, #fee2e2)',
+            border: '1.5px solid #f87171',
+            boxShadow: '0 4px 12px rgba(239, 68, 68, 0.08)',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 14,
+          }}
+        >
+          <div
+            style={{
+              padding: 8,
+              background: '#ef4444',
+              borderRadius: 10,
+              color: '#fff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <Lock size={20} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <h4 style={{ margin: 0, fontSize: 14, fontWeight: 800, color: '#991b1b' }}>
+              Registration Restriced: Financial Hold Active
+            </h4>
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: '#b91c1c', lineHeight: 1.5 }}>
+              {statement?.active_hold_reason || 'You have outstanding semester fee arrears exceeding GH₵ 500.00. University policy blocks course registration until fees are settled.'}
+            </p>
+            <div style={{ marginTop: 8, fontSize: 12, fontWeight: 700, color: '#7f1d1d' }}>
+              Current Outstanding Balance: GH₵ {Number(statement?.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Registration Window Banner ── */}
       {windowData && (
         <div
@@ -317,7 +386,7 @@ export function CourseRegistration() {
                         {sel ? '✓ Selected' : '+ Select'}
                       </button>
                       <button
-                        onClick={() => singleMut.mutate(c.id)}
+                        onClick={() => handleEnrollClick(c)}
                         disabled={c.is_full || singleMut.isPending}
                         style={{ flex: 1, padding: '9px 14px', borderRadius: 10, border: 'none', background: c.is_full ? C.slate1 : C.indigo, color: c.is_full ? C.slate4 : '#fff', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: c.is_full ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                       >
@@ -329,6 +398,102 @@ export function CourseRegistration() {
               </Card>
             );
           })}
+        </div>
+      )}
+
+      {/* ── SCHEDULE CONFLICT PRE-CHECK MODAL ────────────────────── */}
+      {conflictWarning && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.7)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1100,
+            padding: 20,
+          }}
+        >
+          <div style={{ background: '#fff', borderRadius: 18, width: '100%', maxWidth: 480, overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+            <div style={{ padding: '20px 24px', borderBottom: `1px solid ${C.slate2}`, display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <AlertTriangle size={20} color="#d97706" />
+              </div>
+              <div>
+                <h3 style={{ fontSize: 17, fontWeight: 800, color: C.slate9, margin: 0 }}>
+                  Schedule Conflict Detected
+                </h3>
+                <div style={{ fontSize: 12, color: C.slate5, marginTop: 2 }}>
+                  {conflictWarning.course.code} — {conflictWarning.course.title}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ padding: 24 }}>
+              <p style={{ fontSize: 13.5, color: C.slate7, lineHeight: 1.6, margin: '0 0 16px' }}>
+                Enrolling in <strong>{conflictWarning.course.code}</strong> will create a time overlap with your currently enrolled timetable sessions:
+              </p>
+
+              <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '12px 16px', marginBottom: 20 }}>
+                <div style={{ fontSize: 12.5, fontWeight: 700, color: '#92400e', marginBottom: 4 }}>
+                  Conflicting Sessions:
+                </div>
+                {conflictWarning.conflictingWith.length > 0 ? (
+                  conflictWarning.conflictingWith.map((c: any, idx: number) => (
+                    <div key={idx} style={{ fontSize: 12, color: '#b45309', marginTop: 2 }}>
+                      • {c.course_code || c.title || 'Enrolled Course'} ({c.day_name || 'Overlap'} {c.time_slot || ''})
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ fontSize: 12, color: '#b45309' }}>
+                    • Time slot overlaps with your existing course schedule.
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => setConflictWarning(null)}
+                  style={{
+                    padding: '9px 16px',
+                    borderRadius: 8,
+                    border: `1px solid ${C.slate2}`,
+                    background: '#fff',
+                    color: C.slate7,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Cancel & Adjust
+                </button>
+                <button
+                  type="button"
+                  onClick={() => singleMut.mutate(conflictWarning.course.id)}
+                  disabled={singleMut.isPending}
+                  style={{
+                    padding: '9px 18px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: '#d97706',
+                    color: '#fff',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: singleMut.isPending ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  {singleMut.isPending ? <Loader2 size={14} className="animate-spin" /> : null}
+                  Override & Register Anyway
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

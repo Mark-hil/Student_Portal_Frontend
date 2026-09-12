@@ -8,7 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard, BookOpen, BarChart2, Bell, User,
   Plus, GraduationCap, LogOut, Search, ClipboardCheck, Users, Shield,
-  Menu, X
+  Menu, X, Wallet, Coins
 } from 'lucide-react';
 import { C } from '../utils/theme';
 import { useWebSocket } from '../hooks/useWebSocket';
@@ -22,8 +22,12 @@ import { StudentDashboard } from './student/StudentDashboard';
 import { StudentCourses } from './student/StudentCourses';
 import { StudentGrades } from './student/StudentGrades';
 import { CourseRegistration } from './student/CourseRegistration';
+import { StudentFinancials } from './student/StudentFinancials';
 import { LecturerDashboard } from './lecturer/LecturerDashboard';
+import { LecturerCoursesView } from './lecturer/LecturerCoursesView';
 import { AdminDashboard } from './admin/AdminDashboard';
+import { FinanceDashboard } from './finance/FinanceDashboard';
+import { BursarManagement } from './admin/BursarManagement';
 import { UserManagement } from './admin/UserManagement';
 import { CourseManagement } from './admin/CourseManagement';
 import { GradeBatchList } from './shared/GradeBatchList';
@@ -36,7 +40,7 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
   useWebSocket();
   const { isMobile, isTablet, isDesktop } = useBreakpoint();
   const [currentUser, setCurrentUser] = useState<UserType>(initialUser);
-  const [view, setView] = useState('dashboard');
+  const [view, setView] = useState(initialUser.role === 'finance' ? 'bursar' : 'dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -50,23 +54,35 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
 
   const isStudent = currentUser.role === 'student';
   const isLecturer = currentUser.role === 'instructor';
-  const isOfficer = currentUser.role === 'staff' || currentUser.role === 'admin';
+  const isFinance = currentUser.role === 'finance';
+  const isAdmin = currentUser.role === 'admin';
+  const isStaff = currentUser.role === 'staff';
+  const isOfficer = isStaff || isAdmin;
 
   const NAV_STUDENT = [
     { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard },
     { id: 'courses', label: 'My Courses', Icon: BookOpen },
     { id: 'register', label: 'Course Registration', Icon: Plus },
     { id: 'grades', label: 'Grades & GPA', Icon: BarChart2 },
+    { id: 'financials', label: 'Fees & Financials', Icon: Wallet },
     { id: 'notifications', label: 'Notifications', Icon: Bell },
     { id: 'profile', label: 'Profile', Icon: User },
   ];
   const NAV_LECTURER = [
     { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard },
+    { id: 'courses_lecturer', label: 'Manage Courses', Icon: BookOpen },
     { id: 'batches', label: 'Grade Batches', Icon: ClipboardCheck },
     { id: 'notifications', label: 'Notifications', Icon: Bell },
     { id: 'profile', label: 'Profile', Icon: User },
   ];
-  const NAV_OFFICER = [
+  const NAV_FINANCE = [
+    { id: 'dashboard', label: 'Financial Overview', Icon: LayoutDashboard },
+    { id: 'bursar', label: 'Bursar & Accounts', Icon: Coins },
+    { id: 'users', label: 'Student Directory', Icon: Users },
+    { id: 'notifications', label: 'Notifications', Icon: Bell },
+    { id: 'profile', label: 'Profile', Icon: User },
+  ];
+  const NAV_STAFF = [
     { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard },
     { id: 'users', label: 'User Management', Icon: Users },
     { id: 'courses_admin', label: 'Course Management', Icon: BookOpen },
@@ -74,23 +90,42 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
     { id: 'notifications', label: 'Notifications', Icon: Bell },
     { id: 'profile', label: 'Profile', Icon: User },
   ];
+  const NAV_ADMIN = [
+    { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard },
+    { id: 'bursar', label: 'Bursar & Accounts', Icon: Coins },
+    { id: 'users', label: 'User Management', Icon: Users },
+    { id: 'courses_admin', label: 'Course Management', Icon: BookOpen },
+    { id: 'review', label: 'Review Queue', Icon: ClipboardCheck },
+    { id: 'notifications', label: 'Notifications', Icon: Bell },
+    { id: 'profile', label: 'Profile', Icon: User },
+  ];
 
-  const NAV = isLecturer ? NAV_LECTURER : isOfficer ? NAV_OFFICER : NAV_STUDENT;
+  const NAV = isFinance
+    ? NAV_FINANCE
+    : isLecturer
+    ? NAV_LECTURER
+    : isAdmin
+    ? NAV_ADMIN
+    : isStaff
+    ? NAV_STAFF
+    : NAV_STUDENT;
 
   const TITLES: Record<string, string> = {
-    dashboard: 'Dashboard', courses: 'My Courses', register: 'Course Registration',
+    dashboard: isFinance ? 'Financial Overview & Treasury' : 'Dashboard',
+    courses_lecturer: 'Manage Courses & Teaching',
+    courses: 'My Courses', register: 'Course Registration',
     grades: 'Grades & GPA', batches: 'Grade Batches', review: 'Review Queue',
     notifications: 'Notifications', profile: 'My Profile',
-    users: 'User Management', courses_admin: 'Course Management'
+    users: isFinance ? 'Student Directory' : 'User Management',
+    courses_admin: 'Course Management',
+    financials: 'Fees & Financials', bursar: 'Bursar & Accounts'
   };
 
   const handleUserUpdate = (updated: UserType) => {
     setCurrentUser(updated);
     try {
       localStorage.setItem('portal_user', JSON.stringify(updated));
-    } catch (e) {
-      console.error(e);
-    }
+    } catch { /* ignore */ }
   };
 
   const handleNavClick = (navId: string) => {
@@ -102,23 +137,48 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
 
   function renderView() {
     switch (view) {
-      case 'dashboard': return isLecturer ? <LecturerDashboard user={currentUser} /> : isOfficer ? <AdminDashboard user={currentUser} /> : <StudentDashboard user={currentUser} onNav={setView} />;
+      case 'dashboard':
+        if (isFinance) return <FinanceDashboard user={currentUser} onNav={setView} />;
+        if (isLecturer) return <LecturerDashboard user={currentUser} />;
+        if (isOfficer) return <AdminDashboard user={currentUser} />;
+        return <StudentDashboard user={currentUser} onNav={setView} />;
+      case 'courses_lecturer': return <LecturerCoursesView user={currentUser} />;
       case 'users': return <UserManagement />;
       case 'courses_admin': return <CourseManagement />;
+      case 'bursar':
+        if (isStaff) return <AdminDashboard user={currentUser} />;
+        return <BursarManagement />;
       case 'courses': return <StudentCourses onNav={setView} />;
       case 'register': return <CourseRegistration />;
       case 'grades': return <StudentGrades />;
+      case 'financials': return <StudentFinancials user={currentUser} />;
       case 'batches': return <GradeBatchList role="lecturer" />;
       case 'review': return <GradeBatchList role="officer" />;
       case 'notifications': return <NotificationsView />;
       case 'profile': return <ProfileView user={currentUser} onUserUpdate={handleUserUpdate} onNav={setView} />;
-      default: return <StudentDashboard user={currentUser} onNav={setView} />;
+      default: return isFinance ? <FinanceDashboard user={currentUser} onNav={setView} /> : <StudentDashboard user={currentUser} onNav={setView} />;
     }
   }
 
   const initials = (currentUser.first_name?.[0] ?? '') + (currentUser.last_name?.[0] ?? '');
-  const roleLabel = isOfficer ? 'Academic Office' : isLecturer ? 'Faculty Portal' : 'Student Hub';
-  const roleColor = isOfficer ? '#ec4899' : isLecturer ? '#8b5cf6' : '#10b981';
+  const roleLabel = isFinance
+    ? 'Finance Directorate'
+    : isAdmin
+    ? 'System Admin'
+    : isStaff
+    ? 'Academic Office'
+    : isLecturer
+    ? 'Faculty Portal'
+    : 'Student Hub';
+  const roleColor = isFinance
+    ? '#d97706'
+    : isAdmin
+    ? '#6366f1'
+    : isStaff
+    ? '#ec4899'
+    : isLecturer
+    ? '#8b5cf6'
+    : '#10b981';
 
   // Sidebar content (shared between desktop sidebar and mobile drawer)
   const sidebarContent = (

@@ -5,7 +5,7 @@ import {
   Search, Filter, Plus, UserMinus, FileText, CheckCircle2,
   AlertTriangle, Loader2, Video, X, ExternalLink, Sparkles,
   Layers, ArrowRight, LayoutGrid, CalendarRange, ShieldAlert,
-  Info
+  Info, History
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { C, gradeColor } from '../../utils/theme';
@@ -16,6 +16,7 @@ import { ProgressBar } from '../../components/ui/ProgressBar';
 import { Empty } from '../../components/ui/Empty';
 import { useBreakpoint } from '../../hooks/useBreakpoint';
 import { ScrollableTable } from '../../components/ui/Responsive';
+import { StudentCourseModal } from './StudentCourseModal';
 
 const COLORS = [C.indigo, C.green, C.amber, '#ec4899', '#8b5cf6', '#06b6d4', '#f97316'];
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
@@ -27,6 +28,7 @@ interface Props {
 export function StudentCourses({ onNav }: Props) {
   const { isMobile, isTablet } = useBreakpoint();
   const queryClient = useQueryClient();
+  const [coursesTab, setCoursesTab] = useState<'active' | 'history'>('active');
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [viewMode, setViewMode] = useState<'grid' | 'timetable'>('grid');
@@ -38,6 +40,12 @@ export function StudentCourses({ onNav }: Props) {
   const { data: myCoursesData, isLoading: isLoadingCourses } = useQuery({
     queryKey: ['courses', 'mine'],
     queryFn: () => coursesApi.myCourses().then(r => r.data),
+    staleTime: 30_000,
+  });
+
+  const { data: historyData, isLoading: isLoadingHistory } = useQuery({
+    queryKey: ['courses', 'history'],
+    queryFn: () => coursesApi.enrollmentHistory().then(r => r.data),
     staleTime: 30_000,
   });
 
@@ -186,6 +194,136 @@ export function StudentCourses({ onNav }: Props) {
         </div>
       </div>
 
+      {/* ── Main Navigation: Active Courses vs Enrollment History ──── */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+        <button
+          onClick={() => setCoursesTab('active')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '10px 18px',
+            borderRadius: 12,
+            border: 'none',
+            fontSize: 13.5,
+            fontWeight: 700,
+            cursor: 'pointer',
+            background: coursesTab === 'active' ? C.indigo : '#fff',
+            color: coursesTab === 'active' ? '#fff' : C.slate7,
+            boxShadow: coursesTab === 'active' ? '0 4px 12px rgba(99,102,241,0.25)' : '0 1px 3px rgba(0,0,0,0.06)',
+          }}
+        >
+          <BookOpen size={16} /> My Active Enrolled Courses ({courses.length})
+        </button>
+        <button
+          onClick={() => setCoursesTab('history')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '10px 18px',
+            borderRadius: 12,
+            border: 'none',
+            fontSize: 13.5,
+            fontWeight: 700,
+            cursor: 'pointer',
+            background: coursesTab === 'history' ? C.indigo : '#fff',
+            color: coursesTab === 'history' ? '#fff' : C.slate7,
+            boxShadow: coursesTab === 'history' ? '0 4px 12px rgba(99,102,241,0.25)' : '0 1px 3px rgba(0,0,0,0.06)',
+          }}
+        >
+          <History size={16} /> Enrollment History & Dropped Courses ({historyData?.results?.length ?? 0})
+        </button>
+      </div>
+
+      {coursesTab === 'history' ? (
+        <Card style={{ padding: 24 }}>
+          <div style={{ marginBottom: 16 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 800, color: C.slate9, margin: 0 }}>
+              Academic Enrollment Records & Dropped Courses
+            </h3>
+            <p style={{ fontSize: 13, color: C.slate5, margin: '4px 0 0' }}>
+              Full chronological record of your active, dropped, and completed courses across all terms.
+            </p>
+          </div>
+
+          {isLoadingHistory ? (
+            <div style={{ padding: 30, textAlign: 'center', color: C.slate4 }}>
+              <Loader2 size={24} className="animate-spin" style={{ margin: '0 auto 8px' }} />
+              Loading enrollment history...
+            </div>
+          ) : (historyData?.results ?? []).length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 40, color: C.slate4 }}>
+              <History size={36} color={C.slate3} style={{ margin: '0 auto 12px' }} />
+              <div style={{ fontWeight: 600, color: C.slate7 }}>No previous enrollment history</div>
+              <div style={{ fontSize: 12, marginTop: 4 }}>Dropped or archived registrations will be logged here with timestamps.</div>
+            </div>
+          ) : (
+            <ScrollableTable>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ borderBottom: `2px solid ${C.slate2}`, textAlign: 'left', color: C.slate5 }}>
+                    <th style={{ padding: '10px 14px' }}>Course</th>
+                    <th style={{ padding: '10px 14px' }}>Credits</th>
+                    <th style={{ padding: '10px 14px' }}>Semester</th>
+                    <th style={{ padding: '10px 14px' }}>Enrolled Date</th>
+                    <th style={{ padding: '10px 14px' }}>Status</th>
+                    <th style={{ padding: '10px 14px' }}>Details / Reason</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(historyData?.results ?? []).map((rec: Enrollment) => (
+                    <tr key={rec.id} style={{ borderBottom: `1px solid ${C.slate1}` }}>
+                      <td style={{ padding: '12px 14px' }}>
+                        <div style={{ fontWeight: 700, color: C.slate9 }}>{rec.course?.code}</div>
+                        <div style={{ fontSize: 12, color: C.slate5 }}>{rec.course?.title}</div>
+                      </td>
+                      <td style={{ padding: '12px 14px', color: C.slate7 }}>
+                        {rec.course?.credits ?? 3} CR
+                      </td>
+                      <td style={{ padding: '12px 14px', color: C.slate7 }}>
+                        {rec.course?.semester || 'Spring 2025'}
+                      </td>
+                      <td style={{ padding: '12px 14px', color: C.slate5 }}>
+                        {new Date(rec.enrolled_at).toLocaleDateString()}
+                      </td>
+                      <td style={{ padding: '12px 14px' }}>
+                        <span
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            padding: '3px 8px',
+                            borderRadius: 6,
+                            background:
+                              rec.status === 'dropped' ? '#fee2e2' :
+                              rec.status === 'completed' ? '#dcfce7' : '#e0e7ff',
+                            color:
+                              rec.status === 'dropped' ? '#b91c1c' :
+                              rec.status === 'completed' ? '#15803d' : C.indigo,
+                          }}
+                        >
+                          {rec.status}
+                        </span>
+                      </td>
+                      <td style={{ padding: '12px 14px', color: C.slate6, fontSize: 12 }}>
+                        {rec.status === 'dropped' ? (
+                          <span>Dropped by student {rec.dropped_at ? `on ${new Date(rec.dropped_at).toLocaleDateString()}` : ''}</span>
+                        ) : rec.status === 'completed' ? (
+                          <span>Completed term with grade {rec.final_grade || 'Recorded'}</span>
+                        ) : (
+                          <span>Active course ({rec.progress_pct}% completed)</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </ScrollableTable>
+          )}
+        </Card>
+      ) : (
+      <>
       {/* ── Toolbar: Search, Category Filters, and View Switcher ──── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: isMobile ? '100%' : 260, flexWrap: 'wrap' }}>
@@ -583,126 +721,15 @@ export function StudentCourses({ onNav }: Props) {
           </div>
         </Card>
       )}
+      </>
+      )}
 
-      {/* ── COURSE DETAILS & SYLLABUS MODAL ───────────────────────── */}
+      {/* ── COURSE DETAILS & LEARNING MODAL ───────────────────────── */}
       {selectedCourse && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(15, 23, 42, 0.65)',
-            backdropFilter: 'blur(4px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-            padding: 20,
-          }}
-        >
-          <div
-            style={{
-              background: '#fff',
-              borderRadius: 18,
-              width: '100%',
-              maxWidth: 580,
-              maxHeight: '85vh',
-              overflowY: 'auto',
-              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)',
-            }}
-          >
-            <div style={{ padding: '20px 24px', borderBottom: `1px solid ${C.slate2}`, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: C.indigo, background: C.indigoL, padding: '2px 8px', borderRadius: 6 }}>
-                    {selectedCourse.code}
-                  </span>
-                  <span style={{ fontSize: 12, color: C.slate5, fontWeight: 500 }}>
-                    {selectedCourse.credits} Credits · {selectedCourse.semester || 'Spring 2025'}
-                  </span>
-                </div>
-                <h2 style={{ fontSize: 18, fontWeight: 800, color: C.slate9, margin: 0 }}>
-                  {selectedCourse.title}
-                </h2>
-              </div>
-              <button
-                onClick={() => setSelectedCourse(null)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.slate4 }}
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 18 }}>
-              <div>
-                <h4 style={{ fontSize: 12, fontWeight: 700, color: C.slate6, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 6 }}>
-                  Course Overview & Description
-                </h4>
-                <p style={{ fontSize: 13, color: C.slate7, lineHeight: 1.6, margin: 0 }}>
-                  {selectedCourse.description || 'This course explores modern principles, advanced analytical methods, practical labs, and comprehensive problem sets essential for mastery of the discipline.'}
-                </p>
-              </div>
-
-              <div>
-                <h4 style={{ fontSize: 12, fontWeight: 700, color: C.slate6, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 8 }}>
-                  Weekly Class Sessions & Location
-                </h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {(selectedCourse.schedules || []).length === 0 ? (
-                    <div style={{ fontSize: 12, color: C.slate4 }}>Schedule details announced by faculty at first lecture.</div>
-                  ) : (
-                    selectedCourse.schedules.map((s, idx) => (
-                      <div key={idx} style={{ background: C.slate0, padding: '10px 14px', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12 }}>
-                        <span style={{ fontWeight: 600, color: C.slate8 }}>{s.day_name}, {s.start_time?.slice(0, 5)} – {s.end_time?.slice(0, 5)}</span>
-                        <span style={{ color: C.slate5 }}>{s.room || 'Turing Hall, Room 301'}</span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <h4 style={{ fontSize: 12, fontWeight: 700, color: C.slate6, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 8 }}>
-                  Faculty Instructors
-                </h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {(selectedCourse.instructors || []).length === 0 ? (
-                    <div style={{ fontSize: 12, color: C.slate4 }}>Instructor assigned by department.</div>
-                  ) : (
-                    (selectedCourse.instructors || []).map((ins, idx) => (
-                      <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 10, background: C.slate0, padding: '10px 14px', borderRadius: 8 }}>
-                        <div style={{ width: 32, height: 32, borderRadius: '50%', background: C.indigo, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>
-                          {ins.full_name[0]}
-                        </div>
-                        <div>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: C.slate9 }}>{ins.full_name}</div>
-                          <div style={{ fontSize: 11, color: C.slate4 }}>{ins.email}</div>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 10, borderTop: `1px solid ${C.slate2}` }}>
-                <button
-                  onClick={() => setSelectedCourse(null)}
-                  style={{
-                    padding: '9px 18px',
-                    background: C.slate1,
-                    border: 'none',
-                    borderRadius: 8,
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: C.slate7,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <StudentCourseModal
+          course={selectedCourse}
+          onClose={() => setSelectedCourse(null)}
+        />
       )}
 
       {/* ── DROP COURSE CONFIRMATION MODAL ───────────────────────── */}

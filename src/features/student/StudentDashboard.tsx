@@ -1,8 +1,8 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Award, BookOpen, Layers, AlertCircle, ArrowUpRight, Sparkles } from 'lucide-react';
+import { Award, BookOpen, Layers, AlertCircle, ArrowUpRight, Sparkles, CreditCard, ShieldAlert, CheckCircle2 } from 'lucide-react';
 import { gradeColor } from '../../utils/theme';
-import { coursesApi, gradesApi } from '../../api/services';
+import { coursesApi, gradesApi, financialsApi } from '../../api/services';
 import type { User as UserType } from '../../types';
 import { Card } from '../../components/ui/Card';
 import { ProgressBar } from '../../components/ui/ProgressBar';
@@ -22,9 +22,17 @@ export function StudentDashboard({ user, onNav }: { user: UserType; onNav: (v: s
     queryFn: () => coursesApi.myCourses().then(r => r.data),
     staleTime: 60_000,
   });
+  const { data: statement } = useQuery({
+    queryKey: ['financial-statement'],
+    queryFn: () => financialsApi.getMyStatement().then(r => r.data),
+    staleTime: 30_000,
+  });
+
   const my = courses ?? [];
   const semGPA = gpa?.semester_gpa ? parseFloat(gpa.semester_gpa) : null;
   const cumGPA = gpa?.cumulative_gpa ? parseFloat(gpa.cumulative_gpa) : null;
+  const feeBalance = statement ? Number(statement.balance) : 0;
+  const hasHold = Boolean(statement?.has_active_hold);
 
   return (
     <div className="dashboard-container">
@@ -37,7 +45,7 @@ export function StudentDashboard({ user, onNav }: { user: UserType; onNav: (v: s
           <div>
             <div className="flex items-center gap-2 flex-wrap" style={{ marginBottom: 10 }}>
               <span className="hero-badge">
-                {gpa?.current_semester_label ?? 'Spring 2025'}
+                {statement?.semester || gpa?.current_semester_label || 'Current Semester'}
               </span>
               <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>•</span>
               <span className="flex items-center gap-1" style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>
@@ -54,15 +62,49 @@ export function StudentDashboard({ user, onNav }: { user: UserType; onNav: (v: s
           </div>
 
           <div className="hero-actions">
-            <button onClick={() => onNav('register')} className="btn btn-primary">
-              Course Registration <ArrowUpRight size={16} />
+            <button onClick={() => onNav('financials')} className="btn btn-primary" style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#0f172a', fontWeight: 800 }}>
+              <CreditCard size={16} /> Pay Fees (GH₵ {feeBalance.toFixed(2)})
             </button>
-            <button onClick={() => onNav('grades')} className="btn btn-outline" style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)' }}>
-              View Transcripts
+            <button onClick={() => onNav('register')} className="btn btn-outline" style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)' }}>
+              Course Registration <ArrowUpRight size={16} />
             </button>
           </div>
         </div>
       </div>
+
+      {/* ── Financial Hold Warning (if active) ──────────────── */}
+      {hasHold && (
+        <div
+          onClick={() => onNav('financials')}
+          style={{
+            padding: '14px 18px',
+            background: 'rgba(239, 68, 68, 0.08)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            borderRadius: 14,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            transition: 'all 0.15s',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <ShieldAlert size={20} color="#ef4444" />
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#dc2626' }}>
+                Course Registration Hold Active (Arrears &gt; GH₵ 500.00)
+              </div>
+              <div style={{ fontSize: 12, color: '#ef4444' }}>
+                You owe GH₵ {feeBalance.toFixed(2)} in semester fees. Settle via Mobile Money or Bank deposit to unlock registration.
+              </div>
+            </div>
+          </div>
+          <button className="btn btn-sm" style={{ background: '#dc2626', color: '#fff', fontWeight: 700, fontSize: 11 }}>
+            Pay Now →
+          </button>
+        </div>
+      )}
 
       {/* ── Semester GPA + Cumulative GPA Cards ───────────── */}
       <div className="gpa-banner-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>

@@ -4,11 +4,12 @@
  */
 
 // ── Auth / User ───────────────────────────────────────────────────────────────
-export type Role = 'student' | 'instructor' | 'staff' | 'admin';
+export type Role = 'student' | 'instructor' | 'staff' | 'finance' | 'admin';
 
 export interface UserProfile {
   enrollment_year:  number | null;
   graduation_year:  number | null;
+  academic_level?:  string;
   major:            string;
   gpa:              string | null;
   total_credits:    number;
@@ -27,6 +28,7 @@ export interface User {
   phone:          string;
   department:     string;
   bio:            string;
+  is_active?:     boolean;
   email_verified: boolean;
   created_at:     string;
   profile:        UserProfile | null;
@@ -58,8 +60,17 @@ export interface Prerequisite { id: string; code: string; title: string; credits
 
 export type LessonType = 'video' | 'reading' | 'quiz' | 'assignment' | 'live';
 export interface Lesson {
-  id: string; title: string; order: number; lesson_type: LessonType;
-  duration_minutes: number | null; is_free_preview: boolean; published_at: string | null;
+  id:               string;
+  course?:          string;
+  title:            string;
+  order:            number;
+  lesson_type:      LessonType;
+  content?:         string;
+  video_url?:       string;
+  duration_minutes: number | null;
+  is_free_preview:  boolean;
+  published_at:     string | null;
+  is_completed?:    boolean;
 }
 
 export interface Course {
@@ -95,6 +106,7 @@ export interface Enrollment {
   course:       Course;
   status:       EnrollmentStatus;
   enrolled_at:  string;
+  dropped_at?:  string | null;
   progress_pct: string;
   final_grade:  string;
   grade_points: string | null;
@@ -131,13 +143,14 @@ export interface RegistrationStats {
   avg_credits_per_registered: number;
 }
 
-// ── Assignments ───────────────────────────────────────────────────────────────
+// ── Assignments & Submissions ───────────────────────────────────────────────
 export type AssignmentType = 'homework' | 'midterm' | 'final' | 'quiz' | 'project' | 'lab' | 'attendance';
 
 export interface Assignment {
   id:              string;
   title:           string;
   assignment_type: AssignmentType;
+  description?:    string;
   max_score:       string;
   weight:          string;
   due_date:        string | null;
@@ -145,6 +158,51 @@ export interface Assignment {
   course_code:     string;
   course_title:    string;
   created_at:      string;
+  batch_id?:       string | null;
+}
+
+export interface Submission {
+  id:            string;
+  assignment_id: string;
+  student_id:    string;
+  student_code:  string | null;
+  student_name:  string;
+  student_email: string;
+  file:          string | null;
+  file_name:     string | null;
+  file_url:      string | null;
+  text_content:  string;
+  status:        'submitted' | 'late' | 'graded';
+  score:         string | number | null;
+  feedback:      string;
+  graded_at:     string | null;
+  submitted_at:  string;
+  updated_at:    string;
+}
+
+export interface RosterStudent {
+  enrollment_id: string;
+  student_id:    string;
+  student_code:  string;
+  name:          string;
+  email:         string;
+  department:    string;
+  status:        'active' | 'waitlisted' | 'dropped' | 'completed';
+  enrolled_at:   string;
+  progress_pct:  number;
+  current_grade: string;
+  current_pct:   number;
+}
+
+export interface RosterData {
+  course_id:        string;
+  course_code:      string;
+  course_title:     string;
+  total_enrolled:   number;
+  active_count:     number;
+  waitlisted_count: number;
+  dropped_count:    number;
+  students:         RosterStudent[];
 }
 
 // ── Grade Batch (lecturer / officer workflow) ─────────────────────────────────
@@ -293,4 +351,90 @@ export interface ApiError {
   error:   string;
   detail:  string;
   errors?: Record<string, string[]>;
+}
+
+// ── Financials & Fee Billing (Ghana Cedis GH₵) ──────────────────────────────
+export interface PaymentRecord {
+  id:                number;
+  receipt_number:    string;
+  amount:            string | number;
+  currency:          string;
+  channel:           'momo' | 'bank_api' | 'bank_manual' | 'bursary';
+  provider:          string;
+  phone_or_account:  string;
+  reference_number:  string;
+  status:            'completed' | 'pending_verification' | 'failed';
+  slip_image:        string | null;
+  notes:             string;
+  created_at:        string;
+  verified_at:       string | null;
+  student_name:      string;
+  student_email:     string;
+  student_index:     string;
+}
+
+export interface StudentStatement {
+  id:                 number;
+  semester:           string;
+  academic_level?:    string;
+  academic_fee:       string | number;
+  ict_library_fee:    string | number;
+  src_dues:           string | number;
+  examination_fee:    string | number;
+  bursary_aid:        string | number;
+  total_billed:       string | number;
+  total_paid:         string | number;
+  balance:            string | number;
+  currency:           string;
+  status:             'unpaid' | 'partial' | 'paid' | 'overdue';
+  due_date:           string | null;
+  has_active_hold:    boolean;
+  active_hold_reason: string | null;
+  student_name:       string;
+  student_index:      string;
+  payments:           PaymentRecord[];
+  created_at:         string;
+  updated_at:         string;
+}
+
+export interface SemesterFeeStructure {
+  id:                 number;
+  semester:           string;
+  academic_level?:    string;
+  level_title?:       string;
+  academic_fee:       string | number;
+  ict_library_fee:    string | number;
+  src_dues:           string | number;
+  examination_fee:    string | number;
+  total_fee:          string | number;
+  due_date:           string | null;
+  is_active:          boolean;
+}
+
+export interface LevelBreakdownItem {
+  level: string;
+  title: string;
+  student_count: number;
+  total_billed: string | number;
+  total_paid: string | number;
+  total_arrears: string | number;
+  active_holds: number;
+  collection_rate: number;
+}
+
+export interface BursarOverview {
+  metrics: {
+    total_billed:       string | number;
+    total_paid:         string | number;
+    total_arrears:      string | number;
+    collection_rate?:   number;
+    momo_total:         string | number;
+    bank_total:         string | number;
+    active_holds_count: number;
+    level_breakdown?:   LevelBreakdownItem[];
+  };
+  active_fee_structure: SemesterFeeStructure;
+  fee_structures?:      SemesterFeeStructure[];
+  recent_payments:      PaymentRecord[];
+  pending_bank_slips:   PaymentRecord[];
 }
