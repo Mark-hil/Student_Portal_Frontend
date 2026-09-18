@@ -14,12 +14,36 @@ export interface UserProfile {
   gpa:              string | null;
   total_credits:    number;
   preferences:      Record<string, unknown>;
+  // Demographic and contact details (info.txt)
+  ghana_card?:                 string;
+  gender?:                     string;
+  date_of_birth?:              string;
+  birth_place?:                string;
+  country_of_birth?:           string;
+  nationality?:                string;
+  languages_spoken?:           string;
+  medical_condition?:          string;
+  residential_address?:        string;
+  city?:                       string;
+  region?:                     string;
+  district?:                   string;
+  digital_address?:            string;
+  guardian_name?:              string;
+  guardian_phone?:             string;
+  guardian_relationship?:      string;
+  registration_completed_at?:  string;
 }
 
 export interface User {
   id:             string;
   email:          string;
   student_id:     string | null;
+  moh_pin?:       string | null;
+  serial_number?: string | null;
+  program?:       'nursing' | 'midwifery' | string;
+  class_name?:    string;
+  admission_year?: number | null;
+  is_registered?: boolean;
   first_name:     string;
   last_name:      string;
   full_name:      string;
@@ -37,6 +61,74 @@ export interface User {
 export interface LoginResponse {
   user:   User;
   tokens: { access: string; refresh: string };
+}
+
+export interface MOHVerificationResult {
+  status:         'verified';
+  student_id:     string;
+  first_name:     string;
+  last_name:      string;
+  full_name:      string;
+  moh_pin:        string;
+  program:        'nursing' | 'midwifery';
+  program_label:  string;
+  class_name:     string;
+  admission_year: number;
+  email:          string;
+  is_registered:  boolean;
+}
+
+export interface StudentRegistrationPayload {
+  first_name:             string;
+  last_name:              string;
+  ghana_card:             string;
+  gender:                 string;
+  date_of_birth:          string;
+  birth_place:            string;
+  country_of_birth?:      string;
+  nationality?:           string;
+  languages_spoken?:      string;
+  medical_condition?:     string;
+  residential_address:    string;
+  city:                   string;
+  region:                 string;
+  district:               string;
+  digital_address:        string;
+  phone:                  string;
+  email?:                 string;
+  guardian_name:          string;
+  guardian_phone:         string;
+  guardian_relationship?: string;
+  new_password?:          string;
+}
+
+export interface MOHUploadResult {
+  success:             boolean;
+  total_rows:          number;
+  imported_count:      number;
+  notifications_count?: number;
+  skipped_count:       number;
+  dry_run:             boolean;
+  students: Array<{
+    student_id:     string;
+    first_name:     string;
+    last_name:      string;
+    full_name:      string;
+    moh_pin:        string;
+    serial_number:  string;
+    program:        string;
+    program_label:  string;
+    class_name:     string;
+    admission_year: number;
+    phone:          string;
+    email:          string;
+    is_registered:  boolean;
+  }>;
+  errors: Array<{
+    row:    number;
+    pin?:   string;
+    error:  string;
+  }>;
 }
 
 // ── Courses ───────────────────────────────────────────────────────────────────

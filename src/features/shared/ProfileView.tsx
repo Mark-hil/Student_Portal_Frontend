@@ -2,7 +2,8 @@ import React, { useState, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   GraduationCap, Edit3, Key, Shield, CheckCircle2, Building, Mail,
-  FileText, Users, ClipboardCheck, X, Check, Loader2, Camera
+  FileText, Users, ClipboardCheck, X, Check, Loader2, Camera, Award,
+  AlertTriangle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { C, gpaColor } from '../../utils/theme';
@@ -493,6 +494,161 @@ export function ProfileView({ user, onUserUpdate, onNav }: Props) {
               </button>
             </Card>
           </div>
+
+          {/* Official Mandatory Student Registration Record (info.txt) */}
+          <Card style={{ padding: 24, marginBottom: 26, border: '1px solid #cbd5e1' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${C.slate1}`, paddingBottom: 16, marginBottom: 18, flexWrap: 'wrap', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 38, height: 38, borderRadius: 10, background: '#eff6ff', color: C.indigo, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Award size={20} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: C.slate9 }}>
+                    Official Student Profile & Demographics (info.txt)
+                  </h3>
+                  <div style={{ fontSize: 12.5, color: C.slate5, marginTop: 2 }}>
+                    Institutional records submitted during onboarding registration
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  padding: '4px 10px',
+                  borderRadius: 6,
+                  background: user.is_registered ? '#dcfce7' : '#fef3c7',
+                  color: user.is_registered ? '#15803d' : '#b45309',
+                  border: user.is_registered ? '1px solid #bbf7d0' : '1px solid #fde68a',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 5,
+                }}>
+                  {user.is_registered ? <CheckCircle2 size={13} /> : <AlertTriangle size={13} />}
+                  {user.is_registered ? 'Registration Verified' : 'Registration Pending'}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  style={{
+                    padding: '7px 14px',
+                    background: '#f8fafc',
+                    border: `1px solid ${C.slate3}`,
+                    borderRadius: 8,
+                    fontSize: 12.5,
+                    fontWeight: 700,
+                    color: C.slate8,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                  }}
+                >
+                  <FileText size={14} /> Print Registration Slip
+                </button>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 18 }}>
+              {/* Section 1: Personal */}
+              <div style={{ background: '#f8fafc', borderRadius: 12, padding: 16, border: `1px solid ${C.slate1}` }}>
+                <div style={{ fontSize: 13, fontWeight: 800, color: C.slate8, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Users size={15} color={C.indigo} /> Personal Details
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: C.slate5 }}>Ghana Card:</span>
+                    <span style={{ fontWeight: 800, color: C.indigo, fontFamily: 'monospace' }}>{user.profile?.ghana_card || 'Not provided'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: C.slate5 }}>Gender:</span>
+                    <span style={{ fontWeight: 600, color: C.slate8 }}>{user.profile?.gender || '—'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: C.slate5 }}>Date of Birth:</span>
+                    <span style={{ fontWeight: 600, color: C.slate8 }}>{user.profile?.date_of_birth || '—'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: C.slate5 }}>Birth Place:</span>
+                    <span style={{ fontWeight: 600, color: C.slate8 }}>{user.profile?.birth_place || '—'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: C.slate5 }}>Nationality:</span>
+                    <span style={{ fontWeight: 600, color: C.slate8 }}>{user.profile?.nationality || 'Ghanaian'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: C.slate5 }}>Languages:</span>
+                    <span style={{ fontWeight: 600, color: C.slate8 }}>{user.profile?.languages_spoken || '—'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: C.slate5 }}>Medical Condition:</span>
+                    <span style={{ fontWeight: 600, color: C.slate8 }}>{user.profile?.medical_condition || 'None reported'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: Contact & Address */}
+              <div style={{ background: '#f8fafc', borderRadius: 12, padding: 16, border: `1px solid ${C.slate1}` }}>
+                <div style={{ fontSize: 13, fontWeight: 800, color: C.slate8, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Building size={15} color={C.indigo} /> Residential & Digital Address
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: C.slate5 }}>Residential Address:</span>
+                    <span style={{ fontWeight: 600, color: C.slate8, textAlign: 'right' }}>{user.profile?.residential_address || '—'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: C.slate5 }}>Digital Address (GPS):</span>
+                    <span style={{ fontWeight: 800, color: '#059669', fontFamily: 'monospace' }}>{user.profile?.digital_address || '—'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: C.slate5 }}>City / Town:</span>
+                    <span style={{ fontWeight: 600, color: C.slate8 }}>{user.profile?.city || '—'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: C.slate5 }}>Region:</span>
+                    <span style={{ fontWeight: 600, color: C.slate8 }}>{user.profile?.region || '—'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: C.slate5 }}>District:</span>
+                    <span style={{ fontWeight: 600, color: C.slate8 }}>{user.profile?.district || '—'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: C.slate5 }}>Primary Phone:</span>
+                    <span style={{ fontWeight: 700, color: C.slate8 }}>{user.phone || '—'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 3: Next of Kin */}
+              <div style={{ background: '#f8fafc', borderRadius: 12, padding: 16, border: `1px solid ${C.slate1}` }}>
+                <div style={{ fontSize: 13, fontWeight: 800, color: C.slate8, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Users size={15} color={C.rose} /> Parent / Guardian / Next of Kin
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: C.slate5 }}>Full Name:</span>
+                    <span style={{ fontWeight: 700, color: C.slate8 }}>{user.profile?.guardian_name || '—'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: C.slate5 }}>Contact Number:</span>
+                    <span style={{ fontWeight: 700, color: C.slate8 }}>{user.profile?.guardian_phone || '—'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: C.slate5 }}>Relationship:</span>
+                    <span style={{ fontWeight: 600, color: C.slate8 }}>{user.profile?.guardian_relationship || 'Parent / Guardian'}</span>
+                  </div>
+                  {user.profile?.registration_completed_at && (
+                    <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px dashed ${C.slate2}`, fontSize: 11.5, color: C.slate5 }}>
+                      Submitted On: <strong style={{ color: C.slate7 }}>{new Date(user.profile.registration_completed_at).toLocaleString()}</strong>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </Card>
         </>
       )}
 

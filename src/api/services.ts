@@ -11,15 +11,26 @@ import type {
   Assignment, GradeBatch, GradeBatchListItem,
   Lesson, Submission, RosterData,
   StudentStatement, PaymentRecord, SemesterFeeStructure, BursarOverview,
+  MOHVerificationResult, MOHUploadResult, StudentRegistrationPayload,
 } from '../types';
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 export const authApi = {
-  login:    (email: string, password: string) =>
-    client.post<LoginResponse>('/auth/login/', { email, password }),
-  register: (data: { email: string; password: string; first_name: string; last_name: string; role: string }) =>
+  login:       (identifier: string, password: string) =>
+    client.post<LoginResponse>('/auth/login/', { email: identifier, username: identifier, password }),
+  verifyMOH:   (data: { moh_pin: string; serial_number: string }) =>
+    client.post<MOHVerificationResult>('/auth/verify-moh/', data),
+  registerMOH: (data: { moh_pin: string; serial_number: string; password: string; email?: string; phone?: string }) =>
+    client.post<LoginResponse>('/auth/register-moh/', data),
+  completeRegistration: (data: StudentRegistrationPayload) =>
+    client.post<{ status: string; message: string; user: User; tokens: { access: string; refresh: string } }>(
+      '/users/me/complete-registration/',
+      data
+    ),
+  getMe:       () => client.get<User>('/users/me/'),
+  register:    (data: { email: string; password: string; first_name: string; last_name: string; role: string }) =>
     client.post<LoginResponse>('/auth/register/', data),
-  logout:   (refresh?: string) => client.post('/auth/logout/', { refresh }),
+  logout:      (refresh?: string) => client.post('/auth/logout/', { refresh }),
 };
 
 export const downloadCsvBlob = (data: any, defaultFilename: string) => {
@@ -71,6 +82,16 @@ export const adminApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
+  uploadMOHRoster: (formData: FormData) =>
+    client.post<MOHUploadResult>('/users/manage/upload-moh-roster/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  downloadMOHTemplate: async () => {
+    const res = await client.get('/users/manage/moh-template/', {
+      responseType: 'blob',
+    });
+    downloadCsvBlob(res.data, 'asdam_moh_student_roster_template.csv');
+  },
   exportStudentsCsv: async (params?: { role?: string; search?: string }, filename = 'students_directory.csv') => {
     const res = await client.get('/users/manage/export-students/', {
       params,
@@ -78,6 +99,8 @@ export const adminApi = {
     });
     downloadCsvBlob(res.data, filename);
   },
+  resendCredentials: (id: string) =>
+    client.post<{ status: string; message: string; result?: any }>(`/users/manage/${id}/resend-credentials/`),
 };
 
 // ── Courses ───────────────────────────────────────────────────────────────────

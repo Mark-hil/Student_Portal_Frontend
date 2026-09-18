@@ -8,9 +8,11 @@ import React, { useState, FormEvent } from 'react';
 import {
   GraduationCap, Mail, Lock, User, Eye, EyeOff, AlertCircle,
   ShieldCheck, Calendar, Award, Clock, ArrowRight,
-  BookOpen, Shield, Coins
+  BookOpen, Shield, Coins, KeyRound, CheckCircle2, HeartPulse, Sparkles, Phone
 } from 'lucide-react';
 import client from '../api/client';
+import { authApi } from '../api/services';
+import type { MOHVerificationResult } from '../types';
 
 interface Props {
   onSuccess: (user: any, tokens: any) => void;
@@ -66,10 +68,13 @@ const DEMO_ACCOUNTS = [
 
 export default function LoginPage({ onSuccess }: Props) {
   const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [registerType, setRegisterType] = useState<'moh' | 'custom'>('moh');
   const [selectedDemoRole, setSelectedDemoRole] = useState<string | null>('Student');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  // Standard form
   const [form, setForm] = useState({
     email: 'student@uniportal.edu',
     password: 'password123',
@@ -78,13 +83,51 @@ export default function LoginPage({ onSuccess }: Props) {
     role: 'student',
   });
 
+  // MOH Activation form
+  const [mohForm, setMohForm] = useState({
+    moh_pin: '',
+    serial_number: '',
+    password: '',
+    email: '',
+    phone: '',
+  });
+  const [mohVerifiedData, setMohVerifiedData] = useState<MOHVerificationResult | null>(null);
+  const [verifyingMoh, setVerifyingMoh] = useState(false);
+
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }));
+
+  const setMoh = (k: keyof typeof mohForm) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setMohForm(f => ({ ...f, [k]: e.target.value }));
 
   const selectDemoAccount = (demo: typeof DEMO_ACCOUNTS[0]) => {
     setSelectedDemoRole(demo.role);
     setForm(f => ({ ...f, email: demo.email, password: 'password123' }));
     setError('');
+  };
+
+  const handleVerifyMoh = async () => {
+    if (!mohForm.moh_pin.trim() || !mohForm.serial_number.trim()) {
+      setError('Please enter both your MOH PIN and Serial Number.');
+      return;
+    }
+    setError('');
+    setVerifyingMoh(true);
+    try {
+      const res = await authApi.verifyMOH({
+        moh_pin: mohForm.moh_pin.trim(),
+        serial_number: mohForm.serial_number.trim(),
+      });
+      setMohVerifiedData(res.data);
+      if (res.data.email && !res.data.email.includes('@student.asdam.edu.gh')) {
+        setMohForm(f => ({ ...f, email: res.data.email }));
+      }
+    } catch (err: any) {
+      setMohVerifiedData(null);
+      setError(err.response?.data?.detail || 'Verification failed. Please check your MOH PIN and Serial Number.');
+    } finally {
+      setVerifyingMoh(false);
+    }
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -94,16 +137,38 @@ export default function LoginPage({ onSuccess }: Props) {
 
     try {
       if (mode === 'login') {
-        const res = await client.post('/auth/login/', {
-          email: form.email,
-          password: form.password,
-        });
-        const tokens = { access: res.data.access, refresh: res.data.refresh };
+        const res = await authApi.login(form.email, form.password);
+        const tokens = {
+          access: res.data.tokens?.access || (res.data as any).access,
+          refresh: res.data.tokens?.refresh || (res.data as any).refresh,
+        };
         localStorage.setItem('access_token', tokens.access);
         localStorage.setItem('refresh_token', tokens.refresh);
 
-        const userRes = await client.get('/users/me/');
-        onSuccess(userRes.data, tokens);
+        const user = res.data.user || (await client.get('/users/me/')).data;
+        onSuccess(user, tokens);
+      } else if (registerType === 'moh') {
+        if (!mohVerifiedData) {
+          setError('Please verify your MOH PIN and Serial Number first.');
+          setLoading(false);
+          return;
+        }
+        if (!mohForm.password || mohForm.password.length < 8) {
+          setError('Password must be at least 8 characters long.');
+          setLoading(false);
+          return;
+        }
+        const res = await authApi.registerMOH({
+          moh_pin: mohForm.moh_pin.trim(),
+          serial_number: mohForm.serial_number.trim(),
+          password: mohForm.password,
+          email: mohForm.email.trim() || undefined,
+          phone: mohForm.phone.trim() || undefined,
+        });
+        const { user, tokens } = res.data;
+        localStorage.setItem('access_token', tokens.access);
+        localStorage.setItem('refresh_token', tokens.refresh);
+        onSuccess(user, tokens);
       } else {
         const res = await client.post('/auth/register/', {
           email: form.email,
@@ -228,10 +293,57 @@ export default function LoginPage({ onSuccess }: Props) {
                   setError('');
                 }}
               >
-                {m === 'login' ? 'Sign In' : 'Register New Account'}
+                {m === 'login' ? 'Sign In' : 'Register / Activate'}
               </button>
             ))}
           </div>
+
+          {/* Registration Type Sub-tabs */}
+          {mode === 'register' && (
+            <div style={{ display: 'flex', gap: 6, marginBottom: 12, padding: '3px', background: 'var(--slate-100)', borderRadius: 'var(--radius-md)' }}>
+              <button
+                type="button"
+                onClick={() => { setRegisterType('moh'); setError(''); }}
+                style={{
+                  flex: 1,
+                  padding: '6px 10px',
+                  borderRadius: 'var(--radius-sm)',
+                  border: 'none',
+                  background: registerType === 'moh' ? '#ffffff' : 'transparent',
+                  color: registerType === 'moh' ? 'var(--primary-700)' : 'var(--slate-600)',
+                  fontWeight: registerType === 'moh' ? 700 : 500,
+                  fontSize: '0.75rem',
+                  cursor: 'pointer',
+                  boxShadow: registerType === 'moh' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 5,
+                }}
+              >
+                <HeartPulse size={13} color="var(--emerald-600)" />
+                MOH Student Activation
+              </button>
+              <button
+                type="button"
+                onClick={() => { setRegisterType('custom'); setError(''); }}
+                style={{
+                  flex: 1,
+                  padding: '6px 10px',
+                  borderRadius: 'var(--radius-sm)',
+                  border: 'none',
+                  background: registerType === 'custom' ? '#ffffff' : 'transparent',
+                  color: registerType === 'custom' ? 'var(--primary-700)' : 'var(--slate-600)',
+                  fontWeight: registerType === 'custom' ? 700 : 500,
+                  fontSize: '0.75rem',
+                  cursor: 'pointer',
+                  boxShadow: registerType === 'custom' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                }}
+              >
+                Faculty / Other
+              </button>
+            </div>
+          )}
 
           {/* Demo Role Switcher */}
           {mode === 'login' && (
@@ -294,8 +406,278 @@ export default function LoginPage({ onSuccess }: Props) {
           )}
 
           {/* Auth Form */}
-          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-            {mode === 'register' && (
+          {mode === 'login' ? (
+            <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+              <div className="form-group">
+                <label className="form-label">Email, Student ID, or MOH PIN</label>
+                <div className="input-wrap">
+                  <User size={15} className="input-icon" />
+                  <input
+                    type="text"
+                    className="form-input has-icon"
+                    value={form.email}
+                    onChange={e => {
+                      setSelectedDemoRole(null);
+                      set('email')(e);
+                    }}
+                    required
+                    placeholder="student@uniportal.edu or ASDAM/NUR/... or MOH-PIN"
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <div className="flex items-center justify-between">
+                  <label className="form-label">Password</label>
+                  <span style={{ fontSize: '0.71875rem', color: 'var(--primary-600)', fontWeight: 600 }}>
+                    Default: password123 (or Serial No.)
+                  </span>
+                </div>
+                <div className="input-wrap">
+                  <Lock size={15} className="input-icon" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    className="form-input has-icon"
+                    value={form.password}
+                    onChange={set('password')}
+                    required
+                    placeholder="Enter password or Serial Number"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{
+                      position: 'absolute',
+                      right: 8,
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: 'var(--slate-400)',
+                      display: 'flex',
+                      padding: 4,
+                    }}
+                  >
+                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
+              </div>
+
+              <button type="submit" disabled={loading} className="btn btn-primary" style={{ marginTop: 4 }}>
+                {loading ? 'Signing in…' : (
+                  <>
+                    Sign in to Portal <ArrowRight size={15} />
+                  </>
+                )}
+              </button>
+            </form>
+          ) : registerType === 'moh' ? (
+            /* MOH Student Activation Workflow */
+            <div className="flex flex-col gap-3">
+              {!mohVerifiedData ? (
+                /* Step 1: MOH Verification */
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ background: 'rgba(16, 185, 129, 0.08)', padding: '10px 12px', borderRadius: 'var(--radius-md)', border: '1px solid #a7f3d0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#065f46', fontWeight: 700, fontSize: '0.8125rem' }}>
+                      <Sparkles size={14} color="#059669" />
+                      Admitted Students Activation
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: '#047857', marginTop: 3 }}>
+                      Enter your official Ministry of Health (MOH) PIN and Voucher Serial Number to verify your admission and retrieve your ASDAM Student ID.
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">MOH PIN / Index Number</label>
+                    <div className="input-wrap">
+                      <KeyRound size={15} className="input-icon" />
+                      <input
+                        className="form-input has-icon"
+                        value={mohForm.moh_pin}
+                        onChange={setMoh('moh_pin')}
+                        placeholder="e.g. MOH-NUR-2026-001"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Voucher Serial Number</label>
+                    <div className="input-wrap">
+                      <ShieldCheck size={15} className="input-icon" />
+                      <input
+                        className="form-input has-icon"
+                        value={mohForm.serial_number}
+                        onChange={setMoh('serial_number')}
+                        placeholder="e.g. SN-882194"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleVerifyMoh}
+                    disabled={verifyingMoh}
+                    className="btn btn-primary"
+                    style={{ background: 'linear-gradient(135deg, #059669, #10b981)', borderColor: '#059669' }}
+                  >
+                    {verifyingMoh ? 'Verifying Admission Record…' : (
+                      <>
+                        Verify Admission Credentials <CheckCircle2 size={15} />
+                      </>
+                    )}
+                  </button>
+                </div>
+              ) : (
+                /* Step 2: Verified Details & Account Activation */
+                <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+                  {/* Verified Student Badge Card */}
+                  <div style={{
+                    background: '#f0fdf4',
+                    border: '1.5px solid #86efac',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '12px 14px',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.75rem', fontWeight: 700, color: '#15803d' }}>
+                        <CheckCircle2 size={14} color="#16a34a" />
+                        ADMISSION VERIFIED
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => { setMohVerifiedData(null); }}
+                        style={{ background: 'none', border: 'none', fontSize: '0.71875rem', color: 'var(--slate-500)', textDecoration: 'underline', cursor: 'pointer' }}
+                      >
+                        Change
+                      </button>
+                    </div>
+
+                    <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--slate-900)' }}>
+                      {mohVerifiedData.full_name}
+                    </div>
+
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        padding: '3px 8px',
+                        borderRadius: 999,
+                        fontSize: '0.71875rem',
+                        fontWeight: 700,
+                        background: mohVerifiedData.program === 'nursing' ? '#dcfce7' : '#f3e8ff',
+                        color: mohVerifiedData.program === 'nursing' ? '#166534' : '#6b21a8',
+                        border: mohVerifiedData.program === 'nursing' ? '1px solid #bbf7d0' : '1px solid #e9d5ff',
+                      }}>
+                        <HeartPulse size={12} />
+                        {mohVerifiedData.program_label}
+                      </span>
+
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        padding: '3px 8px',
+                        borderRadius: 999,
+                        fontSize: '0.71875rem',
+                        fontWeight: 700,
+                        background: '#e0e7ff',
+                        color: '#3730a3',
+                        border: '1px solid #c7d2fe',
+                        fontFamily: 'monospace',
+                      }}>
+                        {mohVerifiedData.student_id}
+                      </span>
+
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        padding: '3px 8px',
+                        borderRadius: 999,
+                        fontSize: '0.71875rem',
+                        fontWeight: 600,
+                        background: 'var(--slate-100)',
+                        color: 'var(--slate-700)',
+                      }}>
+                        Level {mohVerifiedData.class_name} · {mohVerifiedData.admission_year}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Confirm Portal Email Address</label>
+                    <div className="input-wrap">
+                      <Mail size={15} className="input-icon" />
+                      <input
+                        type="email"
+                        className="form-input has-icon"
+                        value={mohForm.email}
+                        onChange={setMoh('email')}
+                        placeholder="your.email@example.com"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Phone Number (Optional)</label>
+                    <div className="input-wrap">
+                      <Phone size={15} className="input-icon" />
+                      <input
+                        type="tel"
+                        className="form-input has-icon"
+                        value={mohForm.phone}
+                        onChange={setMoh('phone')}
+                        placeholder="e.g. 0241234567"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Create Portal Password (min. 8 characters)</label>
+                    <div className="input-wrap">
+                      <Lock size={15} className="input-icon" />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        className="form-input has-icon"
+                        value={mohForm.password}
+                        onChange={setMoh('password')}
+                        required
+                        minLength={8}
+                        placeholder="Choose a strong password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        style={{
+                          position: 'absolute',
+                          right: 8,
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          color: 'var(--slate-400)',
+                          display: 'flex',
+                          padding: 4,
+                        }}
+                      >
+                        {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <button type="submit" disabled={loading} className="btn btn-primary" style={{ marginTop: 4, background: 'linear-gradient(135deg, #059669, #10b981)', borderColor: '#059669' }}>
+                    {loading ? 'Activating Account…' : (
+                      <>
+                        Activate Portal & Sign In <ArrowRight size={15} />
+                      </>
+                    )}
+                  </button>
+                </form>
+              )}
+            </div>
+          ) : (
+            /* Custom / Faculty registration */
+            <form onSubmit={handleSubmit} className="flex flex-col gap-3">
               <div className="grid grid-cols-2 gap-2">
                 <div className="form-group">
                   <label className="form-label">First Name</label>
@@ -325,66 +707,57 @@ export default function LoginPage({ onSuccess }: Props) {
                   </div>
                 </div>
               </div>
-            )}
 
-            <div className="form-group">
-              <label className="form-label">Institutional Email</label>
-              <div className="input-wrap">
-                <Mail size={15} className="input-icon" />
-                <input
-                  type="email"
-                  className="form-input has-icon"
-                  value={form.email}
-                  onChange={e => {
-                    setSelectedDemoRole(null);
-                    set('email')(e);
-                  }}
-                  required
-                  placeholder="name@uniportal.edu"
-                />
+              <div className="form-group">
+                <label className="form-label">Institutional Email</label>
+                <div className="input-wrap">
+                  <Mail size={15} className="input-icon" />
+                  <input
+                    type="email"
+                    className="form-input has-icon"
+                    value={form.email}
+                    onChange={e => {
+                      setSelectedDemoRole(null);
+                      set('email')(e);
+                    }}
+                    required
+                    placeholder="name@uniportal.edu"
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="form-group">
-              <div className="flex items-center justify-between">
+              <div className="form-group">
                 <label className="form-label">Password</label>
-                {mode === 'login' && (
-                  <span style={{ fontSize: '0.71875rem', color: 'var(--primary-600)', fontWeight: 600, cursor: 'pointer' }}>
-                    Default: password123
-                  </span>
-                )}
+                <div className="input-wrap">
+                  <Lock size={15} className="input-icon" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    className="form-input has-icon"
+                    value={form.password}
+                    onChange={set('password')}
+                    required
+                    minLength={8}
+                    placeholder="Enter your password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{
+                      position: 'absolute',
+                      right: 8,
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: 'var(--slate-400)',
+                      display: 'flex',
+                      padding: 4,
+                    }}
+                  >
+                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
               </div>
-              <div className="input-wrap">
-                <Lock size={15} className="input-icon" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  className="form-input has-icon"
-                  value={form.password}
-                  onChange={set('password')}
-                  required
-                  minLength={8}
-                  placeholder="Enter your password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  style={{
-                    position: 'absolute',
-                    right: 8,
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: 'var(--slate-400)',
-                    display: 'flex',
-                    padding: 4,
-                  }}
-                >
-                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-                </button>
-              </div>
-            </div>
 
-            {mode === 'register' && (
               <div className="form-group">
                 <label className="form-label">Account Role</label>
                 <select className="form-select" value={form.role} onChange={set('role')}>
@@ -393,20 +766,12 @@ export default function LoginPage({ onSuccess }: Props) {
                   <option value="staff">Academic Staff Officer</option>
                 </select>
               </div>
-            )}
 
-            <button type="submit" disabled={loading} className="btn btn-primary" style={{ marginTop: 4 }}>
-              {loading ? (
-                'Signing in…'
-              ) : mode === 'login' ? (
-                <>
-                  Sign in to Portal <ArrowRight size={15} />
-                </>
-              ) : (
-                'Create Account'
-              )}
-            </button>
-          </form>
+              <button type="submit" disabled={loading} className="btn btn-primary" style={{ marginTop: 4 }}>
+                {loading ? 'Creating Account…' : 'Create Account'}
+              </button>
+            </form>
+          )}
 
           {/* SSO Footer */}
           <div

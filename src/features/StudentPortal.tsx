@@ -15,7 +15,7 @@ import { useWebSocket } from '../hooks/useWebSocket';
 import { useBreakpoint } from '../hooks/useBreakpoint';
 import { MobileDrawer } from '../components/ui/Responsive';
 import { Toaster } from 'react-hot-toast';
-import { notificationsApi } from '../api/services';
+import { notificationsApi, authApi } from '../api/services';
 import type { User as UserType } from '../types';
 
 import { StudentDashboard } from './student/StudentDashboard';
@@ -33,16 +33,46 @@ import { CourseManagement } from './admin/CourseManagement';
 import { GradeBatchList } from './shared/GradeBatchList';
 import { NotificationsView } from './shared/NotificationsView';
 import { ProfileView } from './shared/ProfileView';
+import { StudentRegistrationOnboarding } from './student/StudentRegistrationOnboarding';
 
 interface Props { user: UserType; onLogout: () => void; }
 
 export default function StudentPortal({ user: initialUser, onLogout }: Props) {
   useWebSocket();
   const { isMobile, isTablet, isDesktop } = useBreakpoint();
-  const [currentUser, setCurrentUser] = useState<UserType>(initialUser);
+  const [userState, setUserState] = useState<UserType>(initialUser);
   const [view, setView] = useState(initialUser.role === 'finance' ? 'bursar' : 'dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+
+  // Always fetch fresh user profile from backend
+  const { data: freshUser } = useQuery({
+    queryKey: ['me'],
+    queryFn: () => authApi.getMe().then(r => r.data),
+    staleTime: 15_000,
+  });
+
+  const currentUser: UserType = freshUser || userState;
+
+  const handleUserUpdate = (updated: UserType) => {
+    setUserState(updated);
+    try {
+      localStorage.setItem('portal_user', JSON.stringify(updated));
+    } catch { /* ignore */ }
+  };
+
+  // Hard gate: Mandatory Student Profile Registration before accessing portal features
+  if (currentUser.role === 'student' && !currentUser.is_registered) {
+    return (
+      <StudentRegistrationOnboarding
+        user={currentUser}
+        onComplete={(updated) => {
+          handleUserUpdate(updated);
+        }}
+        onLogout={onLogout}
+      />
+    );
+  }
 
   const { data: notifData } = useQuery({
     queryKey: ['notifications'],
@@ -119,13 +149,6 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
     users: isFinance ? 'Student Directory' : 'User Management',
     courses_admin: 'Course Management',
     financials: 'Fees & Financials', bursar: 'Bursar & Accounts'
-  };
-
-  const handleUserUpdate = (updated: UserType) => {
-    setCurrentUser(updated);
-    try {
-      localStorage.setItem('portal_user', JSON.stringify(updated));
-    } catch { /* ignore */ }
   };
 
   const handleNavClick = (navId: string) => {
