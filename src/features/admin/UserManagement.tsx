@@ -4,7 +4,10 @@ import {
   Users, Plus, Search, Shield, Key, UserCheck, UserX,
   Edit2, X, Check, Loader2, Mail, Building, Camera, Download,
   UploadCloud, FileSpreadsheet, HeartPulse, Sparkles, CheckCircle2,
-  AlertTriangle, FileText, Phone, Award
+  AlertTriangle, FileText, Phone, Award,
+  TrendingUp, TrendingDown, UserMinus, RotateCcw, Trash2, History,
+  AlertOctagon, GraduationCap, CheckSquare, Square, Archive, ShieldAlert,
+  AlertCircle, Info
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { C } from '../../utils/theme';
@@ -15,7 +18,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Empty } from '../../components/ui/Empty';
 import { useBreakpoint } from '../../hooks/useBreakpoint';
 import { ScrollableTable } from '../../components/ui/Responsive';
-import type { User, MOHUploadResult } from '../../types';
+import type { User, MOHUploadResult, AcademicStatus, AcademicProgressionLog, DeletionPrecheckResult } from '../../types';
 
 export function UserManagement() {
   const { isMobile } = useBreakpoint();
@@ -24,6 +27,9 @@ export function UserManagement() {
   const [roleFilter, setRoleFilter] = useState('');
   const [programFilter, setProgramFilter] = useState('');
   const [registrationFilter, setRegistrationFilter] = useState('');
+  const [academicStatusFilter, setAcademicStatusFilter] = useState('');
+  const [includeDeleted, setIncludeDeleted] = useState(false);
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [exporting, setExporting] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
@@ -42,6 +48,38 @@ export function UserManagement() {
   const [mohUploadResult, setMohUploadResult] = useState<MOHUploadResult | null>(null);
   const [isUploadingRoster, setIsUploadingRoster] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Lifecycle & Progression State
+  const [promoteTarget, setPromoteTarget] = useState<User | null>(null);
+  const [promoteAcademicYear, setPromoteAcademicYear] = useState('2025/2026');
+  const [promoteNotes, setPromoteNotes] = useState('');
+
+  const [demoteTarget, setDemoteTarget] = useState<User | null>(null);
+  const [demoteTargetLevel, setDemoteTargetLevel] = useState('100');
+  const [demoteReason, setDemoteReason] = useState('');
+
+  const [withdrawTarget, setWithdrawTarget] = useState<User | null>(null);
+  const [withdrawCategory, setWithdrawCategory] = useState<'FINANCIAL' | 'MEDICAL' | 'PERSONAL' | 'ACADEMIC' | 'DISCIPLINARY' | 'OTHER'>('PERSONAL');
+  const [withdrawReason, setWithdrawReason] = useState('');
+
+  const [reinstateTarget, setReinstateTarget] = useState<User | null>(null);
+  const [reinstateLevel, setReinstateLevel] = useState('100');
+  const [reinstateNotes, setReinstateNotes] = useState('');
+
+  const [historyTarget, setHistoryTarget] = useState<User | null>(null);
+  const [historyLogs, setHistoryLogs] = useState<AcademicProgressionLog[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+
+  const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
+  const [deleteMode, setDeleteMode] = useState<'soft' | 'hard'>('soft');
+  const [deleteReason, setDeleteReason] = useState('');
+  const [forceDeleteConfirm, setForceDeleteConfirm] = useState(false);
+  const [deletionPrecheckData, setDeletionPrecheckData] = useState<DeletionPrecheckResult | null>(null);
+  const [isLoadingPrecheck, setIsLoadingPrecheck] = useState(false);
+
+  const [isBulkPromoteOpen, setIsBulkPromoteOpen] = useState(false);
+  const [bulkAcademicYear, setBulkAcademicYear] = useState('2025/2026');
+  const [bulkNotes, setBulkNotes] = useState('');
 
   const handleAdminAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -79,12 +117,14 @@ export function UserManagement() {
   });
 
   const { data, isLoading } = useQuery({
-    queryKey: ['users', 'list', { search, roleFilter, programFilter, registrationFilter }],
+    queryKey: ['users', 'list', { search, roleFilter, programFilter, registrationFilter, academicStatusFilter, includeDeleted }],
     queryFn: () => adminApi.listUsers({
       search,
       role: roleFilter,
       program: programFilter,
       is_registered: registrationFilter,
+      academic_status: academicStatusFilter,
+      include_deleted: includeDeleted ? 'true' : 'false',
     }).then(r => r.data),
     staleTime: 30_000
   });
@@ -146,6 +186,153 @@ export function UserManagement() {
       toast.error(err.response?.data?.detail || 'Failed to reset password.');
     }
   });
+
+  // Progression & Lifecycle Mutations
+  const promoteMutation = useMutation({
+    mutationFn: ({ id, academic_year, notes }: { id: string; academic_year?: string; notes?: string }) =>
+      adminApi.promoteStudent(id, { academic_year, notes }),
+    onSuccess: (res) => {
+      toast.success(res.data.message || 'Student promoted successfully!');
+      qc.invalidateQueries({ queryKey: ['users', 'list'] });
+      setPromoteTarget(null);
+      setPromoteNotes('');
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error || err.response?.data?.detail || 'Failed to promote student.');
+    }
+  });
+
+  const demoteMutation = useMutation({
+    mutationFn: ({ id, target_level, reason }: { id: string; target_level?: string; reason: string }) =>
+      adminApi.demoteStudent(id, { target_level, reason }),
+    onSuccess: (res) => {
+      toast.success(res.data.message || 'Student demoted/retained successfully!');
+      qc.invalidateQueries({ queryKey: ['users', 'list'] });
+      setDemoteTarget(null);
+      setDemoteReason('');
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error || err.response?.data?.detail || 'Failed to demote student.');
+    }
+  });
+
+  const withdrawMutation = useMutation({
+    mutationFn: ({ id, reason, category }: { id: string; reason: string; category?: any }) =>
+      adminApi.withdrawStudent(id, { reason, withdrawal_category: category }),
+    onSuccess: (res) => {
+      toast.success(res.data.message || 'Student withdrawn successfully.');
+      qc.invalidateQueries({ queryKey: ['users', 'list'] });
+      setWithdrawTarget(null);
+      setWithdrawReason('');
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error || err.response?.data?.detail || 'Failed to withdraw student.');
+    }
+  });
+
+  const reinstateMutation = useMutation({
+    mutationFn: ({ id, target_level, notes }: { id: string; target_level?: string; notes?: string }) =>
+      adminApi.reinstateStudent(id, { target_level, notes }),
+    onSuccess: (res) => {
+      toast.success(res.data.message || 'Student reinstated to active status.');
+      qc.invalidateQueries({ queryKey: ['users', 'list'] });
+      setReinstateTarget(null);
+      setReinstateNotes('');
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error || err.response?.data?.detail || 'Failed to reinstate student.');
+    }
+  });
+
+  const softDeleteMutation = useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
+      adminApi.softDeleteUser(id, reason),
+    onSuccess: (res) => {
+      toast.success(res.data.message || 'User account archived.');
+      qc.invalidateQueries({ queryKey: ['users', 'list'] });
+      setDeleteTarget(null);
+      setDeleteReason('');
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error || err.response?.data?.detail || 'Failed to archive user.');
+    }
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: (id: string) => adminApi.restoreUser(id),
+    onSuccess: (res) => {
+      toast.success(res.data.message || 'User account restored.');
+      qc.invalidateQueries({ queryKey: ['users', 'list'] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error || err.response?.data?.detail || 'Failed to restore user.');
+    }
+  });
+
+  const hardDeleteMutation = useMutation({
+    mutationFn: ({ id, force, reason }: { id: string; force?: boolean; reason?: string }) =>
+      adminApi.permanentDeleteUser(id, force, reason),
+    onSuccess: (res) => {
+      toast.success(res.data.message || 'User permanently purged from database.');
+      qc.invalidateQueries({ queryKey: ['users', 'list'] });
+      setDeleteTarget(null);
+      setDeleteReason('');
+      setForceDeleteConfirm(false);
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error || err.response?.data?.detail || 'Failed to delete user permanently.');
+    }
+  });
+
+  const bulkPromoteMutation = useMutation({
+    mutationFn: ({ student_ids, academic_year, notes }: { student_ids: string[]; academic_year?: string; notes?: string }) =>
+      adminApi.bulkPromote({ student_ids, academic_year, notes }),
+    onSuccess: (res) => {
+      const { succeeded, failed } = res.data;
+      if (failed.length === 0) {
+        toast.success(`Successfully promoted all ${succeeded.length} student(s)!`);
+      } else {
+        toast(`Promoted ${succeeded.length} students. ${failed.length} failed.`, { icon: '⚠️' });
+      }
+      qc.invalidateQueries({ queryKey: ['users', 'list'] });
+      setSelectedStudentIds([]);
+      setIsBulkPromoteOpen(false);
+      setBulkNotes('');
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error || err.response?.data?.detail || 'Bulk promotion failed.');
+    }
+  });
+
+  const handleOpenHistory = async (u: User) => {
+    setHistoryTarget(u);
+    setIsLoadingHistory(true);
+    try {
+      const res = await adminApi.getProgressionHistory(u.id);
+      setHistoryLogs(res.data || []);
+    } catch (err: any) {
+      toast.error('Failed to load progression history.');
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  const handleOpenDelete = async (u: User) => {
+    setDeleteTarget(u);
+    setDeleteMode(u.is_deleted ? 'hard' : 'soft');
+    setDeleteReason('');
+    setForceDeleteConfirm(false);
+    setDeletionPrecheckData(null);
+    setIsLoadingPrecheck(true);
+    try {
+      const res = await adminApi.deletionPrecheck(u.id);
+      setDeletionPrecheckData(res.data);
+    } catch (err: any) {
+      // precheck optional or fail gracefully
+    } finally {
+      setIsLoadingPrecheck(false);
+    }
+  };
 
   const handleUploadRoster = async () => {
     if (!mohFile) {
@@ -283,7 +470,7 @@ export function UserManagement() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: 1, minWidth: isMobile ? '100%' : 260 }}>
           <Search size={16} color={C.slate4} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
           <input
@@ -321,39 +508,183 @@ export function UserManagement() {
           onChange={e => setRegistrationFilter(e.target.value)}
           style={{ padding: '11px 16px', border: `1px solid ${C.slate2}`, borderRadius: 12, fontSize: 14, outline: 'none', fontFamily: 'inherit', color: C.slate7, background: '#fff', cursor: 'pointer', width: isMobile ? '100%' : 'auto' }}
         >
-          <option value="">All Account Statuses</option>
+          <option value="">All Activation States</option>
           <option value="true">Registered / Activated</option>
           <option value="false">Pending Activation</option>
         </select>
+
+        <select
+          value={academicStatusFilter}
+          onChange={e => setAcademicStatusFilter(e.target.value)}
+          style={{ padding: '11px 16px', border: `1px solid ${C.slate2}`, borderRadius: 12, fontSize: 14, outline: 'none', fontFamily: 'inherit', color: C.slate7, background: '#fff', cursor: 'pointer', width: isMobile ? '100%' : 'auto' }}
+        >
+          <option value="">All Academic Statuses</option>
+          <option value="active">Active (Good Standing)</option>
+          <option value="probation">Academic Probation</option>
+          <option value="repeating">Repeating / Retained</option>
+          <option value="withdrawn">Withdrawn</option>
+          <option value="graduated">Graduated (Alumni)</option>
+          <option value="suspended">Suspended</option>
+          <option value="deleted">Archived / Deleted</option>
+        </select>
+
+        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: includeDeleted ? '#f1f5f9' : '#fff', border: `1px solid ${includeDeleted ? C.slate4 : C.slate2}`, borderRadius: 12, fontSize: 13.5, fontWeight: 600, color: C.slate7, cursor: 'pointer', userSelect: 'none' }}>
+          <input
+            type="checkbox"
+            checked={includeDeleted}
+            onChange={e => setIncludeDeleted(e.target.checked)}
+            style={{ width: 16, height: 16, cursor: 'pointer', accentColor: C.indigo }}
+          />
+          Include Archived
+        </label>
       </div>
+
+      {/* ── BULK ACTION BAR ────────────────────────────────────── */}
+      {selectedStudentIds.length > 0 && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '12px 18px',
+          background: '#eff6ff',
+          border: '1px solid #bfdbfe',
+          borderRadius: 14,
+          flexWrap: 'wrap',
+          gap: 12,
+          boxShadow: '0 2px 8px rgba(37,99,235,0.08)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: '#dbeafe', color: '#1d4ed8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <CheckSquare size={16} />
+            </div>
+            <div>
+              <span style={{ fontSize: 13.5, fontWeight: 800, color: '#1e40af' }}>
+                {selectedStudentIds.length} student{selectedStudentIds.length > 1 ? 's' : ''} selected
+              </span>
+              <span style={{ fontSize: 12, color: '#3b82f6', marginLeft: 8 }}>
+                Ready for cohort progression
+              </span>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button
+              onClick={() => setIsBulkPromoteOpen(true)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '8px 16px',
+                background: C.indigo,
+                color: '#fff',
+                border: 'none',
+                borderRadius: 10,
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 2px 6px rgba(79,70,229,0.25)'
+              }}
+            >
+              <GraduationCap size={15} /> Promote Cohort
+            </button>
+            <button
+              onClick={() => setSelectedStudentIds([])}
+              style={{
+                padding: '8px 14px',
+                background: '#fff',
+                color: C.slate6,
+                border: `1px solid ${C.slate3}`,
+                borderRadius: 10,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              Clear Selection
+            </button>
+          </div>
+        </div>
+      )}
 
       <Card style={{ overflow: 'hidden' }}>
         {isLoading ? (
           <div style={{ padding: 40, display: 'flex', justifyContent: 'center' }}><Spinner /></div>
         ) : users.length === 0 ? (
-          <Empty icon={Users} title="No users found" sub="Try adjusting your search or role filters." />
+          <Empty icon={Users} title="No users found" sub="Try adjusting your search, role, or status filters." />
         ) : (
-          <ScrollableTable minWidth={850}>
+          <ScrollableTable minWidth={950}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: C.slate0 }}>
-                  {['Student / User', 'Institutional ID & MOH PIN', 'Program & Class', 'System Role', 'Status', 'Account Actions'].map(h => (
-                    <th key={h} style={{ padding: '12px 18px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: C.slate5, textTransform: 'uppercase', letterSpacing: '.04em' }}>{h}</th>
+                  <th style={{ width: 42, padding: '12px 14px', textAlign: 'center' }}>
+                    <input
+                      type="checkbox"
+                      checked={
+                        users.filter((u: any) => u.role === 'student' && !u.is_deleted).length > 0 &&
+                        users.filter((u: any) => u.role === 'student' && !u.is_deleted).every((u: any) => selectedStudentIds.includes(u.id))
+                      }
+                      onChange={(e) => {
+                        const activeStudents = users.filter((u: any) => u.role === 'student' && !u.is_deleted);
+                        if (e.target.checked) {
+                          const idsToAdd = activeStudents.map((u: any) => u.id);
+                          setSelectedStudentIds(Array.from(new Set([...selectedStudentIds, ...idsToAdd])));
+                        } else {
+                          const activeIds = new Set(activeStudents.map((u: any) => u.id));
+                          setSelectedStudentIds(prev => prev.filter(id => !activeIds.has(id)));
+                        }
+                      }}
+                      style={{ width: 16, height: 16, cursor: 'pointer', accentColor: C.indigo }}
+                      title="Select all active students"
+                    />
+                  </th>
+                  {['Student / User', 'Institutional ID & PIN', 'Program & Class', 'Academic Status', 'System Role & State', 'Lifecycle Actions'].map(h => (
+                    <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: C.slate5, textTransform: 'uppercase', letterSpacing: '.04em' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {users.map((u: any) => {
                   const isActive = u.is_active !== false;
+                  const isArchived = Boolean(u.is_deleted);
                   const isNursing = u.program === 'nursing' || u.department?.toLowerCase()?.includes('nurs');
                   const isMidwifery = u.program === 'midwifery' || u.department?.toLowerCase()?.includes('midwi');
                   const isRegistered = u.is_registered !== false;
+                  const isStudent = u.role === 'student';
+                  const acadStatus: AcademicStatus = ((u.academic_status || 'active').toLowerCase() as AcademicStatus);
+
+                  const statusStyles: Record<string, { bg: string; color: string; border: string; label: string }> = {
+                    active: { bg: '#ecfdf5', color: '#047857', border: '#a7f3d0', label: 'Active (Good Standing)' },
+                    probation: { bg: '#fffbeb', color: '#b45309', border: '#fde68a', label: 'Academic Probation' },
+                    repeating: { bg: '#fef3c7', color: '#b45309', border: '#fcd34d', label: 'Repeating / Retained' },
+                    withdrawn: { bg: '#fee2e2', color: '#b91c1c', border: '#fca5a5', label: 'Withdrawn' },
+                    suspended: { bg: '#fef2f2', color: '#991b1b', border: '#fecaca', label: 'Suspended' },
+                    graduated: { bg: '#ede9fe', color: '#6d28d9', border: '#ddd6fe', label: 'Graduated (Alumnus)' },
+                    deleted: { bg: '#f1f5f9', color: '#475569', border: '#cbd5e1', label: 'Archived / Deleted' },
+                  };
+
+                  const currentStyle = isArchived ? statusStyles.deleted : (statusStyles[acadStatus] || statusStyles.active);
 
                   return (
-                    <tr key={u.id} style={{ borderTop: `1px solid ${C.slate1}` }}>
-                      <td style={{ padding: '14px 18px', fontSize: 14, fontWeight: 700, color: C.slate9 }}>
+                    <tr key={u.id} style={{ borderTop: `1px solid ${C.slate1}`, background: isArchived ? '#f8fafc' : undefined, opacity: isArchived ? 0.85 : 1 }}>
+                      <td style={{ padding: '14px 14px', textAlign: 'center' }}>
+                        {isStudent && !isArchived && (
+                          <input
+                            type="checkbox"
+                            checked={selectedStudentIds.includes(u.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedStudentIds(prev => [...prev, u.id]);
+                              } else {
+                                setSelectedStudentIds(prev => prev.filter(id => id !== u.id));
+                              }
+                            }}
+                            style={{ width: 16, height: 16, cursor: 'pointer', accentColor: C.indigo }}
+                          />
+                        )}
+                      </td>
+
+                      <td style={{ padding: '14px 16px', fontSize: 14, fontWeight: 700, color: C.slate9 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <div style={{ width: 34, height: 34, borderRadius: '50%', background: C.indigoL, color: C.indigo, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, overflow: 'hidden', flexShrink: 0 }}>
+                          <div style={{ width: 34, height: 34, borderRadius: '50%', background: isArchived ? C.slate2 : C.indigoL, color: isArchived ? C.slate6 : C.indigo, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, overflow: 'hidden', flexShrink: 0 }}>
                             {u.avatar ? (
                               <img src={u.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             ) : (
@@ -361,14 +692,21 @@ export function UserManagement() {
                             )}
                           </div>
                           <div>
-                            <div>{u.first_name} {u.last_name}</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span>{u.first_name} {u.last_name}</span>
+                              {isArchived && (
+                                <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 5px', borderRadius: 4, background: '#e2e8f0', color: '#475569' }}>
+                                  ARCHIVED
+                                </span>
+                              )}
+                            </div>
                             <div style={{ fontSize: 12, color: C.slate5, fontWeight: 400 }}>{u.email}</div>
                           </div>
                           {u.role === 'admin' && <Shield size={14} color={C.rose} />}
                         </div>
                       </td>
 
-                      <td style={{ padding: '14px 18px' }}>
+                      <td style={{ padding: '14px 16px' }}>
                         {u.student_id ? (
                           <div>
                             <span style={{
@@ -395,7 +733,7 @@ export function UserManagement() {
                         )}
                       </td>
 
-                      <td style={{ padding: '14px 18px' }}>
+                      <td style={{ padding: '14px 16px' }}>
                         {isNursing || isMidwifery ? (
                           <div>
                             <span style={{
@@ -422,85 +760,310 @@ export function UserManagement() {
                         )}
                       </td>
 
-                      <td style={{ padding: '14px 18px' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                          <Badge label={u.role} color={u.role === 'student' ? C.slate1 : u.role === 'instructor' ? C.indigoL : C.roseL} text={u.role === 'student' ? C.slate7 : u.role === 'instructor' ? C.indigo : C.rose} />
-                          {u.role === 'student' && (
+                      <td style={{ padding: '14px 16px' }}>
+                        {isStudent ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                             <span style={{
-                              fontSize: 10.5,
-                              fontWeight: 700,
-                              color: isRegistered ? '#15803d' : '#b45309',
-                              background: isRegistered ? '#dcfce7' : '#fef3c7',
-                              border: isRegistered ? '1px solid #bbf7d0' : '1px solid #fde68a',
-                              padding: '2px 6px',
-                              borderRadius: 4,
                               display: 'inline-flex',
                               alignItems: 'center',
-                              gap: 3,
+                              gap: 4,
+                              fontSize: 11,
+                              fontWeight: 700,
+                              padding: '3px 8px',
+                              borderRadius: 6,
+                              background: currentStyle.bg,
+                              color: currentStyle.color,
+                              border: `1px solid ${currentStyle.border}`,
+                              width: 'fit-content'
                             }}>
-                              {isRegistered ? <CheckCircle2 size={11} /> : <AlertTriangle size={11} />}
-                              {isRegistered ? 'Registered' : 'Pending Profile Reg'}
+                              {acadStatus === 'graduated' && <GraduationCap size={12} />}
+                              {acadStatus === 'withdrawn' && <UserMinus size={12} />}
+                              {acadStatus === 'repeating' && <TrendingDown size={12} />}
+                              {acadStatus === 'active' && <CheckCircle2 size={12} />}
+                              {acadStatus === 'probation' && <AlertTriangle size={12} />}
+                              {currentStyle.label}
                             </span>
-                          )}
+                            {u.withdrawal_reason && acadStatus === 'withdrawn' && (
+                              <span style={{ fontSize: 10.5, color: '#dc2626', fontStyle: 'italic', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={u.withdrawal_reason}>
+                                Reason: {u.withdrawal_reason}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span style={{ fontSize: 12, color: C.slate4 }}>N/A (Staff/Faculty)</span>
+                        )}
+                      </td>
+
+                      <td style={{ padding: '14px 16px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <Badge label={u.role} color={u.role === 'student' ? C.slate1 : u.role === 'instructor' ? C.indigoL : C.roseL} text={u.role === 'student' ? C.slate7 : u.role === 'instructor' ? C.indigo : C.rose} />
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                            <span
+                              style={{
+                                fontSize: 10.5,
+                                fontWeight: 700,
+                                padding: '2px 6px',
+                                borderRadius: 4,
+                                background: isActive ? '#dcfce7' : '#fee2e2',
+                                color: isActive ? '#15803d' : '#b91c1c',
+                              }}
+                            >
+                              {isActive ? 'Active Login' : 'Suspended'}
+                            </span>
+                            {isStudent && (
+                              <span style={{
+                                fontSize: 10.5,
+                                fontWeight: 700,
+                                color: isRegistered ? '#15803d' : '#b45309',
+                                background: isRegistered ? '#dcfce7' : '#fef3c7',
+                                border: isRegistered ? '1px solid #bbf7d0' : '1px solid #fde68a',
+                                padding: '1px 5px',
+                                borderRadius: 4,
+                              }}>
+                                {isRegistered ? 'Reg' : 'Pending'}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </td>
 
-                      <td style={{ padding: '14px 18px' }}>
-                        <span
-                          style={{
-                            fontSize: 11.5,
-                            fontWeight: 700,
-                            padding: '3px 8px',
-                            borderRadius: 6,
-                            background: isActive ? '#dcfce7' : '#fee2e2',
-                            color: isActive ? '#15803d' : '#b91c1c',
-                          }}
-                        >
-                          {isActive ? 'Active' : 'Suspended'}
-                        </span>
-                      </td>
-                      <td style={{ padding: '14px 18px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                          {u.role === 'student' && (
+                      <td style={{ padding: '14px 16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+                          {/* Student Academic Lifecycle Actions */}
+                          {isStudent && !isArchived && acadStatus !== 'graduated' && acadStatus !== 'withdrawn' && (
+                            <>
+                              <button
+                                onClick={() => {
+                                  setPromoteTarget(u);
+                                  setPromoteNotes('');
+                                }}
+                                title={u.class_name === '300' ? "Graduate Student (Alumnus)" : "Promote Student to Next Level"}
+                                style={{
+                                  padding: '4px 8px',
+                                  background: '#eef2ff',
+                                  border: '1px solid #c7d2fe',
+                                  borderRadius: 6,
+                                  fontSize: 11.5,
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  color: C.indigo,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 3,
+                                }}
+                              >
+                                {u.class_name === '300' ? <GraduationCap size={12} /> : <TrendingUp size={12} />}
+                                {u.class_name === '300' ? 'Graduate' : 'Promote'}
+                              </button>
+
+                              <button
+                                onClick={() => {
+                                  setDemoteTarget(u);
+                                  setDemoteTargetLevel(u.class_name === '300' ? '200' : '100');
+                                  setDemoteReason('');
+                                }}
+                                title="Demote or Retain Student"
+                                style={{
+                                  padding: '4px 8px',
+                                  background: '#fffbeb',
+                                  border: '1px solid #fde68a',
+                                  borderRadius: 6,
+                                  fontSize: 11.5,
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  color: '#b45309',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 3,
+                                }}
+                              >
+                                <TrendingDown size={12} /> Demote
+                              </button>
+
+                              <button
+                                onClick={() => {
+                                  setWithdrawTarget(u);
+                                  setWithdrawReason('');
+                                }}
+                                title="Withdraw Student"
+                                style={{
+                                  padding: '4px 8px',
+                                  background: '#fff1f2',
+                                  border: '1px solid #fecdd3',
+                                  borderRadius: 6,
+                                  fontSize: 11.5,
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  color: '#be123c',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 3,
+                                }}
+                              >
+                                <UserMinus size={12} /> Withdraw
+                              </button>
+                            </>
+                          )}
+
+                          {isStudent && !isArchived && acadStatus === 'withdrawn' && (
+                            <button
+                              onClick={() => {
+                                setReinstateTarget(u);
+                                setReinstateLevel(u.class_name || '100');
+                                setReinstateNotes('');
+                              }}
+                              title="Reinstate Withdrawn Student"
+                              style={{
+                                padding: '4px 8px',
+                                background: '#ecfdf5',
+                                border: '1px solid #a7f3d0',
+                                borderRadius: 6,
+                                fontSize: 11.5,
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                color: '#047857',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 3,
+                              }}
+                            >
+                              <RotateCcw size={12} /> Reinstate
+                            </button>
+                          )}
+
+                          {isStudent && (
+                            <button
+                              onClick={() => handleOpenHistory(u)}
+                              title="View Academic Progression & Audit Log"
+                              style={{
+                                padding: '4px 8px',
+                                background: '#f8fafc',
+                                border: `1px solid ${C.slate2}`,
+                                borderRadius: 6,
+                                fontSize: 11.5,
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                color: C.slate6,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 3,
+                              }}
+                            >
+                              <History size={12} /> Logs
+                            </button>
+                          )}
+
+                          {isArchived ? (
+                            <>
+                              <button
+                                onClick={() => {
+                                  if (window.confirm(`Restore account for ${u.first_name} ${u.last_name}?`)) {
+                                    restoreMutation.mutate(u.id);
+                                  }
+                                }}
+                                title="Restore Soft-Deleted Account"
+                                style={{
+                                  padding: '4px 8px',
+                                  background: '#ecfdf5',
+                                  border: '1px solid #a7f3d0',
+                                  borderRadius: 6,
+                                  fontSize: 11.5,
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  color: '#047857',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 3,
+                                }}
+                              >
+                                <RotateCcw size={12} /> Restore
+                              </button>
+
+                              <button
+                                onClick={() => handleOpenDelete(u)}
+                                title="Permanently Purge Student from DB"
+                                style={{
+                                  padding: '4px 8px',
+                                  background: '#fef2f2',
+                                  border: '1px solid #fecaca',
+                                  borderRadius: 6,
+                                  fontSize: 11.5,
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  color: '#b91c1c',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 3,
+                                }}
+                              >
+                                <Trash2 size={12} /> Purge
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={() => handleOpenDelete(u)}
+                              title="Archive or Delete Account"
+                              style={{
+                                padding: '4px 8px',
+                                background: '#f8fafc',
+                                border: `1px solid ${C.slate2}`,
+                                borderRadius: 6,
+                                fontSize: 11.5,
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                color: '#64748b',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 3,
+                              }}
+                            >
+                              <Trash2 size={12} /> Delete
+                            </button>
+                          )}
+
+                          {/* Existing actions */}
+                          {isStudent && (
                             <button
                               onClick={() => setViewingStudentRegistration(u)}
                               title="View Official Registration Record (info.txt)"
                               style={{
-                                padding: '5px 10px',
+                                padding: '4px 8px',
                                 background: '#f0fdf4',
                                 border: '1px solid #bbf7d0',
                                 borderRadius: 6,
-                                fontSize: 12,
+                                fontSize: 11.5,
                                 fontWeight: 700,
                                 cursor: 'pointer',
                                 color: '#15803d',
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: 4,
+                                gap: 3,
                               }}
                             >
-                              <FileText size={13} /> Registration
+                              <FileText size={12} /> Slip
                             </button>
                           )}
+
                           <button
                             onClick={() => setEditingUser(u)}
                             title="Edit User Details"
                             style={{
-                              padding: '5px 10px',
+                              padding: '4px 8px',
                               background: C.slate1,
                               border: `1px solid ${C.slate2}`,
                               borderRadius: 6,
-                              fontSize: 12,
+                              fontSize: 11.5,
                               fontWeight: 600,
                               cursor: 'pointer',
                               color: C.slate7,
                               display: 'flex',
                               alignItems: 'center',
-                              gap: 4,
+                              gap: 3,
                             }}
                           >
-                            <Edit2 size={13} /> Edit
+                            <Edit2 size={12} /> Edit
                           </button>
+
                           <button
                             onClick={() => {
                               if (window.confirm(`${isActive ? 'Suspend' : 'Activate'} user account for ${u.first_name} ${u.last_name}?`)) {
@@ -509,42 +1072,43 @@ export function UserManagement() {
                             }}
                             title={isActive ? 'Suspend Account' : 'Activate Account'}
                             style={{
-                              padding: '5px 10px',
+                              padding: '4px 8px',
                               background: isActive ? '#fef2f2' : '#ecfdf5',
                               border: `1px solid ${isActive ? '#fecaca' : '#a7f3d0'}`,
                               borderRadius: 6,
-                              fontSize: 12,
+                              fontSize: 11.5,
                               fontWeight: 600,
                               cursor: 'pointer',
                               color: isActive ? '#dc2626' : '#059669',
                               display: 'flex',
                               alignItems: 'center',
-                              gap: 4,
+                              gap: 3,
                             }}
                           >
-                            {isActive ? <UserX size={13} /> : <UserCheck size={13} />}
-                            {isActive ? 'Suspend' : 'Activate'}
+                            {isActive ? <UserX size={12} /> : <UserCheck size={12} />}
                           </button>
+
                           <button
                             onClick={() => setResetPasswordTarget(u)}
                             title="Reset User Password"
                             style={{
-                              padding: '5px 10px',
+                              padding: '4px 8px',
                               background: '#f8fafc',
                               border: `1px solid ${C.slate2}`,
                               borderRadius: 6,
-                              fontSize: 12,
+                              fontSize: 11.5,
                               fontWeight: 600,
                               cursor: 'pointer',
                               color: C.slate6,
                               display: 'flex',
                               alignItems: 'center',
-                              gap: 4,
+                              gap: 3,
                             }}
                           >
-                            <Key size={13} /> Reset Pass
+                            <Key size={12} />
                           </button>
-                          {u.role === 'student' && !isRegistered && (
+
+                          {isStudent && !isRegistered && (
                             <button
                               onClick={async () => {
                                 try {
@@ -557,20 +1121,20 @@ export function UserManagement() {
                               }}
                               title="Resend Welcome SMS & Email"
                               style={{
-                                padding: '5px 10px',
+                                padding: '4px 8px',
                                 background: '#eff6ff',
                                 border: '1px solid #bfdbfe',
                                 borderRadius: 6,
-                                fontSize: 12,
+                                fontSize: 11.5,
                                 fontWeight: 700,
                                 cursor: 'pointer',
                                 color: '#1d4ed8',
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: 4,
+                                gap: 3,
                               }}
                             >
-                              <Mail size={13} /> Resend SMS/Email
+                              <Mail size={12} />
                             </button>
                           )}
                         </div>
@@ -1519,6 +2083,706 @@ export function UserManagement() {
                   Close Record
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── PROMOTE STUDENT MODAL ─────────────────────────────────── */}
+      {promoteTarget && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 110, padding: 20 }}>
+          <div style={{ background: '#fff', borderRadius: 20, padding: 28, width: 520, maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18, borderBottom: `1px solid ${C.slate1}`, paddingBottom: 14 }}>
+              <div style={{ width: 42, height: 42, borderRadius: 12, background: '#e0e7ff', color: C.indigo, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {promoteTarget.class_name === '300' ? <GraduationCap size={22} /> : <TrendingUp size={22} />}
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: C.slate9 }}>
+                  {promoteTarget.class_name === '300' ? 'Graduate Final-Year Student' : 'Promote Student'}
+                </h3>
+                <p style={{ margin: 0, fontSize: 12.5, color: C.slate5 }}>
+                  {promoteTarget.first_name} {promoteTarget.last_name} ({promoteTarget.student_id || 'ID: Pending'})
+                </p>
+              </div>
+            </div>
+
+            {promoteTarget.class_name === '300' ? (
+              <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12, padding: 14, marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                  <Award size={20} color="#2563eb" style={{ flexShrink: 0, marginTop: 2 }} />
+                  <div style={{ fontSize: 13, color: '#1e40af', lineHeight: 1.5 }}>
+                    <strong>Final Year Diploma Graduation:</strong> This student is currently at <strong>Level 300</strong>. Promoting will conclude their diploma program, assign academic status <strong>GRADUATED (Alumnus)</strong>, and record their graduation date.
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div style={{ background: '#f8fafc', border: `1px solid ${C.slate2}`, borderRadius: 12, padding: 14, marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    <span style={{ fontSize: 12, color: C.slate5 }}>Current Level</span>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: C.slate8 }}>Level {promoteTarget.class_name || '100'}</div>
+                  </div>
+                  <div style={{ fontSize: 18, color: C.indigo }}>➔</div>
+                  <div>
+                    <span style={{ fontSize: 12, color: C.slate5 }}>Next Level</span>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: C.indigo }}>
+                      Level {promoteTarget.class_name === '100' ? '200' : '300'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: C.slate7, marginBottom: 6 }}>
+                  Academic Year
+                </label>
+                <input
+                  value={promoteAcademicYear}
+                  onChange={e => setPromoteAcademicYear(e.target.value)}
+                  placeholder="e.g. 2025/2026"
+                  style={{ width: '100%', padding: '10px 14px', border: `1px solid ${C.slate2}`, borderRadius: 10, fontSize: 14, boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: C.slate7, marginBottom: 6 }}>
+                  Progression Remarks / Resolution (Optional)
+                </label>
+                <textarea
+                  value={promoteNotes}
+                  onChange={e => setPromoteNotes(e.target.value)}
+                  placeholder="e.g. Passed all Semester 2 prerequisites; approved by Academic Board."
+                  rows={3}
+                  style={{ width: '100%', padding: '10px 14px', border: `1px solid ${C.slate2}`, borderRadius: 10, fontSize: 13.5, fontFamily: 'inherit', boxSizing: 'border-box' }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 22, borderTop: `1px solid ${C.slate1}`, paddingTop: 14 }}>
+              <button
+                type="button"
+                onClick={() => setPromoteTarget(null)}
+                style={{ padding: '9px 18px', background: '#f1f5f9', border: 'none', borderRadius: 10, fontSize: 13.5, fontWeight: 600, color: C.slate6, cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => promoteMutation.mutate({ id: promoteTarget.id, academic_year: promoteAcademicYear, notes: promoteNotes })}
+                disabled={promoteMutation.isPending}
+                style={{ padding: '9px 20px', background: C.indigo, color: '#fff', border: 'none', borderRadius: 10, fontSize: 13.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                {promoteMutation.isPending && <Loader2 size={16} className="animate-spin" />}
+                {promoteTarget.class_name === '300' ? 'Confirm Graduation' : 'Confirm Promotion'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── DEMOTE / RETAIN STUDENT MODAL ─────────────────────────── */}
+      {demoteTarget && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 110, padding: 20 }}>
+          <div style={{ background: '#fff', borderRadius: 20, padding: 28, width: 520, maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18, borderBottom: `1px solid ${C.slate1}`, paddingBottom: 14 }}>
+              <div style={{ width: 42, height: 42, borderRadius: 12, background: '#fef3c7', color: '#b45309', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <TrendingDown size={22} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: C.slate9 }}>
+                  Demote or Retain Student
+                </h3>
+                <p style={{ margin: 0, fontSize: 12.5, color: C.slate5 }}>
+                  {demoteTarget.first_name} {demoteTarget.last_name} ({demoteTarget.student_id || 'ID: Pending'})
+                </p>
+              </div>
+            </div>
+
+            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: 14, marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                <AlertTriangle size={18} color="#b45309" style={{ flexShrink: 0, marginTop: 2 }} />
+                <div style={{ fontSize: 12.5, color: '#92400e', lineHeight: 1.5 }}>
+                  This action marks the student as <strong>REPEATING</strong>. An official audit log will record the retention/demotion reason.
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: C.slate7, marginBottom: 6 }}>
+                  Target Academic Level
+                </label>
+                <select
+                  value={demoteTargetLevel}
+                  onChange={e => setDemoteTargetLevel(e.target.value)}
+                  style={{ width: '100%', padding: '10px 14px', border: `1px solid ${C.slate2}`, borderRadius: 10, fontSize: 14, boxSizing: 'border-box', background: '#fff' }}
+                >
+                  <option value={demoteTarget.class_name || '100'}>Repeat Current Level ({demoteTarget.class_name || '100'})</option>
+                  {demoteTarget.class_name === '300' && <option value="200">Demote to Level 200</option>}
+                  {demoteTarget.class_name === '200' && <option value="100">Demote to Level 100</option>}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: C.slate7, marginBottom: 6 }}>
+                  Mandatory Reason / Academic Board Decision <span style={{ color: C.rose }}>*</span>
+                </label>
+                <textarea
+                  value={demoteReason}
+                  onChange={e => setDemoteReason(e.target.value)}
+                  placeholder="e.g. Failed multiple clinical and core nursing courses (GPA < 1.5); retained to repeat coursework."
+                  rows={3}
+                  style={{ width: '100%', padding: '10px 14px', border: `1px solid ${C.slate2}`, borderRadius: 10, fontSize: 13.5, fontFamily: 'inherit', boxSizing: 'border-box' }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 22, borderTop: `1px solid ${C.slate1}`, paddingTop: 14 }}>
+              <button
+                type="button"
+                onClick={() => setDemoteTarget(null)}
+                style={{ padding: '9px 18px', background: '#f1f5f9', border: 'none', borderRadius: 10, fontSize: 13.5, fontWeight: 600, color: C.slate6, cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!demoteReason.trim()) {
+                    toast.error('A mandatory retention reason must be provided.');
+                    return;
+                  }
+                  demoteMutation.mutate({ id: demoteTarget.id, target_level: demoteTargetLevel, reason: demoteReason });
+                }}
+                disabled={demoteMutation.isPending}
+                style={{ padding: '9px 20px', background: '#b45309', color: '#fff', border: 'none', borderRadius: 10, fontSize: 13.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                {demoteMutation.isPending && <Loader2 size={16} className="animate-spin" />}
+                Confirm Demotion / Retention
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── WITHDRAW STUDENT MODAL ─────────────────────────────────── */}
+      {withdrawTarget && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 110, padding: 20 }}>
+          <div style={{ background: '#fff', borderRadius: 20, padding: 28, width: 540, maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18, borderBottom: `1px solid ${C.slate1}`, paddingBottom: 14 }}>
+              <div style={{ width: 42, height: 42, borderRadius: 12, background: '#fee2e2', color: '#b91c1c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <UserMinus size={22} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: C.slate9 }}>
+                  Formal Student Withdrawal
+                </h3>
+                <p style={{ margin: 0, fontSize: 12.5, color: C.slate5 }}>
+                  {withdrawTarget.first_name} {withdrawTarget.last_name} ({withdrawTarget.student_id || 'ID: Pending'})
+                </p>
+              </div>
+            </div>
+
+            <div style={{ background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: 12, padding: 14, marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                <ShieldAlert size={20} color="#be123c" style={{ flexShrink: 0, marginTop: 2 }} />
+                <div style={{ fontSize: 12.5, color: '#9f1239', lineHeight: 1.5 }}>
+                  <strong>Grade & Enrollment Safeguards:</strong> In-progress course registrations will be gracefully marked as <strong>DROPPED</strong> with grade <strong>"W"</strong> so the student's cumulative GPA is not penalized. Historic completed courses and financial records remain permanently preserved.
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: C.slate7, marginBottom: 6 }}>
+                  Withdrawal Category
+                </label>
+                <select
+                  value={withdrawCategory}
+                  onChange={e => setWithdrawCategory(e.target.value as any)}
+                  style={{ width: '100%', padding: '10px 14px', border: `1px solid ${C.slate2}`, borderRadius: 10, fontSize: 14, boxSizing: 'border-box', background: '#fff' }}
+                >
+                  <option value="PERSONAL">Personal / Family Reasons</option>
+                  <option value="MEDICAL">Medical Condition / Health</option>
+                  <option value="FINANCIAL">Financial Constraints</option>
+                  <option value="ACADEMIC">Academic Difficulties / Transfer</option>
+                  <option value="DISCIPLINARY">Disciplinary Dismissal</option>
+                  <option value="OTHER">Other / Institutional Decision</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: C.slate7, marginBottom: 6 }}>
+                  Withdrawal Reason / Official Documentation <span style={{ color: C.rose }}>*</span>
+                </label>
+                <textarea
+                  value={withdrawReason}
+                  onChange={e => setWithdrawReason(e.target.value)}
+                  placeholder="Provide explicit context or letter reference regarding this withdrawal..."
+                  rows={3}
+                  style={{ width: '100%', padding: '10px 14px', border: `1px solid ${C.slate2}`, borderRadius: 10, fontSize: 13.5, fontFamily: 'inherit', boxSizing: 'border-box' }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 22, borderTop: `1px solid ${C.slate1}`, paddingTop: 14 }}>
+              <button
+                type="button"
+                onClick={() => setWithdrawTarget(null)}
+                style={{ padding: '9px 18px', background: '#f1f5f9', border: 'none', borderRadius: 10, fontSize: 13.5, fontWeight: 600, color: C.slate6, cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!withdrawReason.trim()) {
+                    toast.error('Please specify a reason for student withdrawal.');
+                    return;
+                  }
+                  withdrawMutation.mutate({ id: withdrawTarget.id, reason: withdrawReason, category: withdrawCategory });
+                }}
+                disabled={withdrawMutation.isPending}
+                style={{ padding: '9px 20px', background: '#be123c', color: '#fff', border: 'none', borderRadius: 10, fontSize: 13.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                {withdrawMutation.isPending && <Loader2 size={16} className="animate-spin" />}
+                Confirm Withdrawal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── REINSTATE STUDENT MODAL ─────────────────────────────────── */}
+      {reinstateTarget && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 110, padding: 20 }}>
+          <div style={{ background: '#fff', borderRadius: 20, padding: 28, width: 500, maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18, borderBottom: `1px solid ${C.slate1}`, paddingBottom: 14 }}>
+              <div style={{ width: 42, height: 42, borderRadius: 12, background: '#ecfdf5', color: '#047857', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <RotateCcw size={22} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: C.slate9 }}>
+                  Reinstate Withdrawn Student
+                </h3>
+                <p style={{ margin: 0, fontSize: 12.5, color: C.slate5 }}>
+                  {reinstateTarget.first_name} {reinstateTarget.last_name} ({reinstateTarget.student_id || 'ID: Pending'})
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: C.slate7, marginBottom: 6 }}>
+                  Resume at Academic Level
+                </label>
+                <select
+                  value={reinstateLevel}
+                  onChange={e => setReinstateLevel(e.target.value)}
+                  style={{ width: '100%', padding: '10px 14px', border: `1px solid ${C.slate2}`, borderRadius: 10, fontSize: 14, boxSizing: 'border-box', background: '#fff' }}
+                >
+                  <option value="100">Level 100</option>
+                  <option value="200">Level 200</option>
+                  <option value="300">Level 300</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: C.slate7, marginBottom: 6 }}>
+                  Reinstatement Remarks (Optional)
+                </label>
+                <textarea
+                  value={reinstateNotes}
+                  onChange={e => setReinstateNotes(e.target.value)}
+                  placeholder="e.g. Medical clearance approved; resuming clinical studies."
+                  rows={3}
+                  style={{ width: '100%', padding: '10px 14px', border: `1px solid ${C.slate2}`, borderRadius: 10, fontSize: 13.5, fontFamily: 'inherit', boxSizing: 'border-box' }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 22, borderTop: `1px solid ${C.slate1}`, paddingTop: 14 }}>
+              <button
+                type="button"
+                onClick={() => setReinstateTarget(null)}
+                style={{ padding: '9px 18px', background: '#f1f5f9', border: 'none', borderRadius: 10, fontSize: 13.5, fontWeight: 600, color: C.slate6, cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => reinstateMutation.mutate({ id: reinstateTarget.id, target_level: reinstateLevel, notes: reinstateNotes })}
+                disabled={reinstateMutation.isPending}
+                style={{ padding: '9px 20px', background: '#047857', color: '#fff', border: 'none', borderRadius: 10, fontSize: 13.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                {reinstateMutation.isPending && <Loader2 size={16} className="animate-spin" />}
+                Reinstate Student
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── ACADEMIC PROGRESSION HISTORY MODAL ───────────────────────── */}
+      {historyTarget && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 110, padding: 20 }}>
+          <div style={{ background: '#fff', borderRadius: 20, padding: 28, width: 620, maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, borderBottom: `1px solid ${C.slate1}`, paddingBottom: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 42, height: 42, borderRadius: 12, background: '#f1f5f9', color: C.slate7, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <History size={22} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: C.slate9 }}>
+                    Progression & Audit History
+                  </h3>
+                  <p style={{ margin: 0, fontSize: 12.5, color: C.slate5 }}>
+                    {historyTarget.first_name} {historyTarget.last_name} ({historyTarget.student_id || 'ID: Pending'})
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setHistoryTarget(null)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.slate4, padding: 4 }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {isLoadingHistory ? (
+              <div style={{ padding: 40, display: 'flex', justifyContent: 'center' }}><Spinner /></div>
+            ) : historyLogs.length === 0 ? (
+              <div style={{ padding: 30, textAlign: 'center', color: C.slate5 }}>
+                <Info size={28} style={{ margin: '0 auto 8px', color: C.slate4 }} />
+                <p style={{ margin: 0, fontSize: 14 }}>No progression events recorded yet for this student.</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {historyLogs.map(log => {
+                  const actionColors: Record<string, { bg: string; text: string }> = {
+                    promotion: { bg: '#e0e7ff', text: '#3730a3' },
+                    demotion: { bg: '#fef3c7', text: '#92400e' },
+                    withdrawal: { bg: '#fee2e2', text: '#991b1b' },
+                    reinstatement: { bg: '#dcfce7', text: '#166534' },
+                    graduation: { bg: '#ede9fe', text: '#5b21b6' },
+                    soft_delete: { bg: '#f1f5f9', text: '#475569' },
+                    restore: { bg: '#dcfce7', text: '#166534' },
+                  };
+                  const color = actionColors[log.action] || { bg: '#f1f5f9', text: '#475569' };
+
+                  return (
+                    <div key={log.id} style={{ border: `1px solid ${C.slate2}`, borderRadius: 12, padding: 14, background: '#fafafa' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', padding: '2px 8px', borderRadius: 6, background: color.bg, color: color.text }}>
+                            {log.action_display || log.action}
+                          </span>
+                          {log.from_level && log.to_level && (
+                            <span style={{ fontSize: 12, fontWeight: 700, color: C.slate7 }}>
+                              Level {log.from_level} ➔ Level {log.to_level}
+                            </span>
+                          )}
+                        </div>
+                        <span style={{ fontSize: 11.5, color: C.slate4 }}>
+                          {new Date(log.created_at).toLocaleString()}
+                        </span>
+                      </div>
+
+                      {log.reason && (
+                        <p style={{ margin: '6px 0', fontSize: 12.5, color: C.slate8, background: '#fff', padding: '8px 12px', borderRadius: 8, border: `1px solid ${C.slate1}` }}>
+                          {log.reason}
+                        </p>
+                      )}
+
+                      <div style={{ display: 'flex', gap: 12, fontSize: 11.5, color: C.slate5, marginTop: 6, flexWrap: 'wrap' }}>
+                        {log.academic_year && <span>Academic Year: <strong>{log.academic_year}</strong></span>}
+                        {log.performed_by_name && <span>Authorized by: <strong>{log.performed_by_name}</strong></span>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
+              <button
+                type="button"
+                onClick={() => setHistoryTarget(null)}
+                style={{ padding: '9px 20px', background: C.slate8, color: '#fff', border: 'none', borderRadius: 10, fontSize: 13.5, fontWeight: 700, cursor: 'pointer' }}
+              >
+                Close History
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── TWO-TIER DELETE MODAL ─────────────────────────────────── */}
+      {deleteTarget && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 110, padding: 20 }}>
+          <div style={{ background: '#fff', borderRadius: 20, padding: 28, width: 540, maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18, borderBottom: `1px solid ${C.slate1}`, paddingBottom: 14 }}>
+              <div style={{ width: 42, height: 42, borderRadius: 12, background: '#fee2e2', color: '#b91c1c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Trash2 size={22} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: C.slate9 }}>
+                  User Account Deletion & Archival
+                </h3>
+                <p style={{ margin: 0, fontSize: 12.5, color: C.slate5 }}>
+                  {deleteTarget.first_name} {deleteTarget.last_name} ({deleteTarget.email})
+                </p>
+              </div>
+            </div>
+
+            {/* Mode Switcher */}
+            <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: 10, padding: 4, marginBottom: 16 }}>
+              <button
+                type="button"
+                onClick={() => setDeleteMode('soft')}
+                style={{
+                  flex: 1,
+                  padding: '8px 12px',
+                  border: 'none',
+                  borderRadius: 8,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  background: deleteMode === 'soft' ? '#fff' : 'transparent',
+                  color: deleteMode === 'soft' ? C.slate9 : C.slate5,
+                  boxShadow: deleteMode === 'soft' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none'
+                }}
+              >
+                Safe Archival (Soft Delete)
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeleteMode('hard')}
+                style={{
+                  flex: 1,
+                  padding: '8px 12px',
+                  border: 'none',
+                  borderRadius: 8,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  background: deleteMode === 'hard' ? '#fee2e2' : 'transparent',
+                  color: deleteMode === 'hard' ? '#b91c1c' : C.slate5,
+                  boxShadow: deleteMode === 'hard' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none'
+                }}
+              >
+                Permanent Purge (Hard Delete)
+              </button>
+            </div>
+
+            {deleteMode === 'soft' ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div style={{ background: '#f8fafc', border: `1px solid ${C.slate2}`, borderRadius: 12, padding: 14, fontSize: 13, color: C.slate7, lineHeight: 1.5 }}>
+                  <strong>Safe & Reversible:</strong> Soft-deleting will deactivate login access and hide the account from default directories. All financial statements, payments, course grades, and personal files remain permanently intact and can be fully restored at any time.
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: C.slate7, marginBottom: 6 }}>
+                    Archival Reason (Optional)
+                  </label>
+                  <input
+                    value={deleteReason}
+                    onChange={e => setDeleteReason(e.target.value)}
+                    placeholder="e.g. Duplicate account, requested archive"
+                    style={{ width: '100%', padding: '10px 14px', border: `1px solid ${C.slate2}`, borderRadius: 10, fontSize: 14, boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
+                  <button
+                    type="button"
+                    onClick={() => setDeleteTarget(null)}
+                    style={{ padding: '9px 18px', background: '#f1f5f9', border: 'none', borderRadius: 10, fontSize: 13.5, fontWeight: 600, color: C.slate6, cursor: 'pointer' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => softDeleteMutation.mutate({ id: deleteTarget.id, reason: deleteReason })}
+                    disabled={softDeleteMutation.isPending}
+                    style={{ padding: '9px 20px', background: '#475569', color: '#fff', border: 'none', borderRadius: 10, fontSize: 13.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                  >
+                    {softDeleteMutation.isPending && <Loader2 size={16} className="animate-spin" />}
+                    Archive User Account
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {/* Deletion Precheck stats */}
+                {isLoadingPrecheck ? (
+                  <div style={{ padding: 20, textAlign: 'center' }}><Spinner /></div>
+                ) : deletionPrecheckData ? (
+                  <div style={{ background: '#f8fafc', border: `1px solid ${C.slate2}`, borderRadius: 12, padding: 14 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: C.slate8, marginBottom: 8 }}>Institutional Pre-Audit Check:</div>
+                    {deletionPrecheckData.can_hard_delete ? (
+                      <div style={{ padding: 10, background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 8, fontSize: 12.5, color: '#047857', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <CheckCircle2 size={16} />
+                        <span>Eligible for permanent deletion. No financial payments or transcripts blocking deletion.</span>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <div style={{ padding: 10, background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, fontSize: 12, color: '#991b1b', lineHeight: 1.4 }}>
+                          <AlertOctagon size={16} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 5 }} />
+                          <strong>Guarded by Institutional Policy:</strong> Permanent deletion is restricted to preserve institutional records.
+                        </div>
+                        {deletionPrecheckData.blockers.map((b, idx) => (
+                          <div key={idx} style={{ fontSize: 12, color: '#b91c1c', display: 'flex', alignItems: 'center', gap: 6, paddingLeft: 6 }}>
+                            <span>•</span> {b}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+
+                {!deletionPrecheckData?.can_hard_delete && (
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12.5, color: '#991b1b', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={forceDeleteConfirm}
+                      onChange={e => setForceDeleteConfirm(e.target.checked)}
+                      style={{ marginTop: 2, accentColor: '#b91c1c' }}
+                    />
+                    <span>
+                      I am an authorized Superadmin and explicitly confirm forced permanent destruction of all associated records.
+                    </span>
+                  </label>
+                )}
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: C.slate7, marginBottom: 6 }}>
+                    Purge Reason / Justification <span style={{ color: C.rose }}>*</span>
+                  </label>
+                  <input
+                    value={deleteReason}
+                    onChange={e => setDeleteReason(e.target.value)}
+                    placeholder="State reason for permanent deletion"
+                    style={{ width: '100%', padding: '10px 14px', border: `1px solid ${C.slate2}`, borderRadius: 10, fontSize: 14, boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
+                  <button
+                    type="button"
+                    onClick={() => setDeleteTarget(null)}
+                    style={{ padding: '9px 18px', background: '#f1f5f9', border: 'none', borderRadius: 10, fontSize: 13.5, fontWeight: 600, color: C.slate6, cursor: 'pointer' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!deleteReason.trim()) {
+                        toast.error('A reason must be supplied for permanent deletion.');
+                        return;
+                      }
+                      hardDeleteMutation.mutate({ id: deleteTarget.id, force: forceDeleteConfirm, reason: deleteReason });
+                    }}
+                    disabled={
+                      hardDeleteMutation.isPending ||
+                      (!deletionPrecheckData?.can_hard_delete && !forceDeleteConfirm)
+                    }
+                    style={{
+                      padding: '9px 20px',
+                      background: '#b91c1c',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: 10,
+                      fontSize: 13.5,
+                      fontWeight: 700,
+                      cursor: (!deletionPrecheckData?.can_hard_delete && !forceDeleteConfirm) ? 'not-allowed' : 'pointer',
+                      opacity: (!deletionPrecheckData?.can_hard_delete && !forceDeleteConfirm) ? 0.5 : 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6
+                    }}
+                  >
+                    {hardDeleteMutation.isPending && <Loader2 size={16} className="animate-spin" />}
+                    Permanently Purge Record
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── BULK COHORT PROMOTION MODAL ───────────────────────────── */}
+      {isBulkPromoteOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 110, padding: 20 }}>
+          <div style={{ background: '#fff', borderRadius: 20, padding: 28, width: 540, maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18, borderBottom: `1px solid ${C.slate1}`, paddingBottom: 14 }}>
+              <div style={{ width: 42, height: 42, borderRadius: 12, background: '#e0e7ff', color: C.indigo, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <GraduationCap size={22} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: C.slate9 }}>
+                  Bulk Cohort Promotion
+                </h3>
+                <p style={{ margin: 0, fontSize: 12.5, color: C.slate5 }}>
+                  Advancing {selectedStudentIds.length} selected student(s) to their next academic level
+                </p>
+              </div>
+            </div>
+
+            <div style={{ background: '#f8fafc', border: `1px solid ${C.slate2}`, borderRadius: 12, padding: 14, marginBottom: 16 }}>
+              <div style={{ fontSize: 13, color: C.slate7, lineHeight: 1.5 }}>
+                Each selected student will be transitioned to their subsequent academic level (e.g. 100 ➔ 200, 200 ➔ 300, and final-year 300 ➔ GRADUATED). An immutable audit log entry will be recorded for every student.
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: C.slate7, marginBottom: 6 }}>
+                  Academic Year
+                </label>
+                <input
+                  value={bulkAcademicYear}
+                  onChange={e => setBulkAcademicYear(e.target.value)}
+                  placeholder="e.g. 2025/2026"
+                  style={{ width: '100%', padding: '10px 14px', border: `1px solid ${C.slate2}`, borderRadius: 10, fontSize: 14, boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: C.slate7, marginBottom: 6 }}>
+                  Batch Promotion Remarks (Optional)
+                </label>
+                <textarea
+                  value={bulkNotes}
+                  onChange={e => setBulkNotes(e.target.value)}
+                  placeholder="e.g. End-of-year annual cohort promotion approved by Academic Board."
+                  rows={3}
+                  style={{ width: '100%', padding: '10px 14px', border: `1px solid ${C.slate2}`, borderRadius: 10, fontSize: 13.5, fontFamily: 'inherit', boxSizing: 'border-box' }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 22, borderTop: `1px solid ${C.slate1}`, paddingTop: 14 }}>
+              <button
+                type="button"
+                onClick={() => setIsBulkPromoteOpen(false)}
+                style={{ padding: '9px 18px', background: '#f1f5f9', border: 'none', borderRadius: 10, fontSize: 13.5, fontWeight: 600, color: C.slate6, cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => bulkPromoteMutation.mutate({ student_ids: selectedStudentIds, academic_year: bulkAcademicYear, notes: bulkNotes })}
+                disabled={bulkPromoteMutation.isPending}
+                style={{ padding: '9px 20px', background: C.indigo, color: '#fff', border: 'none', borderRadius: 10, fontSize: 13.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                {bulkPromoteMutation.isPending && <Loader2 size={16} className="animate-spin" />}
+                Promote {selectedStudentIds.length} Students
+              </button>
             </div>
           </div>
         </div>

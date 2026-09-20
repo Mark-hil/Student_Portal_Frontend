@@ -12,6 +12,8 @@ import type {
   Lesson, Submission, RosterData,
   StudentStatement, PaymentRecord, SemesterFeeStructure, BursarOverview,
   MOHVerificationResult, MOHUploadResult, StudentRegistrationPayload,
+  AcademicProgressionLog, PromoteStudentPayload, DemoteStudentPayload,
+  WithdrawStudentPayload, ReinstateStudentPayload, BulkPromotePayload, DeletionPrecheckResult,
 } from '../types';
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -101,6 +103,49 @@ export const adminApi = {
   },
   resendCredentials: (id: string) =>
     client.post<{ status: string; message: string; result?: any }>(`/users/manage/${id}/resend-credentials/`),
+  promoteStudent: (id: string, data: PromoteStudentPayload) =>
+    client.post<{ success: boolean; message: string; student_id: string; from_level: string; to_level: string; academic_status: string; user: User }>(
+      `/users/manage/${id}/promote/`,
+      data
+    ),
+  demoteStudent: (id: string, data: DemoteStudentPayload) =>
+    client.post<{ success: boolean; message: string; student_id: string; from_level: string; to_level: string; academic_status: string; user: User }>(
+      `/users/manage/${id}/demote/`,
+      data
+    ),
+  withdrawStudent: (id: string, data: WithdrawStudentPayload) =>
+    client.post<{ success: boolean; message: string; student_id: string; academic_status: string; dropped_courses_count: number; user: User }>(
+      `/users/manage/${id}/withdraw/`,
+      data
+    ),
+  reinstateStudent: (id: string, data: ReinstateStudentPayload) =>
+    client.post<{ success: boolean; message: string; student_id: string; academic_status: string; level: string; user: User }>(
+      `/users/manage/${id}/reinstate/`,
+      data
+    ),
+  softDeleteUser: (id: string, reason?: string) =>
+    client.post<{ success: boolean; message: string; student_id: string }>(
+      `/users/manage/${id}/soft-delete/`,
+      { reason }
+    ),
+  restoreUser: (id: string) =>
+    client.post<{ success: boolean; message: string; student_id: string; user: User }>(
+      `/users/manage/${id}/restore/`
+    ),
+  deletionPrecheck: (id: string) =>
+    client.get<DeletionPrecheckResult>(`/users/manage/${id}/deletion-precheck/`),
+  permanentDeleteUser: (id: string, force = false, reason?: string) =>
+    client.post<{ success: boolean; message: string }>(
+      `/users/manage/${id}/permanent-delete/`,
+      { force, reason }
+    ),
+  bulkPromote: (data: BulkPromotePayload) =>
+    client.post<{ succeeded: Array<{ id: string; name: string; student_id: string; from_level: string; to_level: string; status: string }>; failed: Array<{ id: string; name: string; student_id: string; error: string }>; total: number }>(
+      '/users/manage/bulk-promote/',
+      data
+    ),
+  getProgressionHistory: (id: string) =>
+    client.get<AcademicProgressionLog[]>(`/users/manage/${id}/progression-history/`),
 };
 
 // ── Courses ───────────────────────────────────────────────────────────────────

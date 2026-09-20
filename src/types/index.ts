@@ -5,6 +5,7 @@
 
 // ── Auth / User ───────────────────────────────────────────────────────────────
 export type Role = 'student' | 'instructor' | 'staff' | 'finance' | 'admin';
+export type AcademicStatus = 'active' | 'probation' | 'repeating' | 'withdrawn' | 'suspended' | 'graduated' | 'deleted';
 
 export interface UserProfile {
   enrollment_year:  number | null;
@@ -44,6 +45,10 @@ export interface User {
   class_name?:    string;
   admission_year?: number | null;
   is_registered?: boolean;
+  academic_status?: AcademicStatus;
+  withdrawal_date?: string | null;
+  withdrawal_reason?: string | null;
+  graduation_date?: string | null;
   first_name:     string;
   last_name:      string;
   full_name:      string;
@@ -53,9 +58,75 @@ export interface User {
   department:     string;
   bio:            string;
   is_active?:     boolean;
+  is_deleted?:    boolean;
+  deleted_at?:    string | null;
   email_verified: boolean;
   created_at:     string;
   profile:        UserProfile | null;
+}
+
+export interface AcademicProgressionLog {
+  id: string;
+  student: string;
+  action: 'promotion' | 'demotion' | 'withdrawal' | 'reinstatement' | 'graduation' | 'status_change' | 'soft_delete' | 'restore';
+  action_display: string;
+  from_level: string;
+  to_level: string;
+  from_status: string;
+  to_status: string;
+  reason: string;
+  academic_year: string;
+  semester: string;
+  performed_by: string | null;
+  performed_by_name: string;
+  performed_by_email: string | null;
+  metadata: Record<string, any>;
+  created_at: string;
+}
+
+export interface PromoteStudentPayload {
+  target_level?: string;
+  academic_year?: string;
+  semester?: string;
+  notes?: string;
+}
+
+export interface DemoteStudentPayload {
+  target_level?: string;
+  reason: string;
+  academic_year?: string;
+  semester?: string;
+  notes?: string;
+}
+
+export interface WithdrawStudentPayload {
+  reason: string;
+  withdrawal_category?: string;
+  effective_date?: string | null;
+  academic_year?: string;
+  semester?: string;
+  notes?: string;
+}
+
+export interface ReinstateStudentPayload {
+  target_level?: string;
+  academic_year?: string;
+  semester?: string;
+  notes?: string;
+}
+
+export interface BulkPromotePayload {
+  student_ids: string[];
+  target_level?: string;
+  academic_year?: string;
+  notes?: string;
+}
+
+export interface DeletionPrecheckResult {
+  can_hard_delete: boolean;
+  blockers: string[];
+  student_id: string | null;
+  name: string;
 }
 
 export interface LoginResponse {
