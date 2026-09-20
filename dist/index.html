@@ -8,7 +8,19 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <script type="module" crossorigin src="/assets/index-CDCL7T9G.js"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+          regs.forEach(function(r) { r.unregister(); });
+        });
+        if ('caches' in window) {
+          caches.keys().then(function(keys) {
+            keys.forEach(function(k) { caches.delete(k); });
+          });
+        }
+      }
+    </script>
+    <script type="module" crossorigin src="/assets/index-CNpLkDdn.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/query-BpxuCIcN.js">
     <link rel="modulepreload" crossorigin href="/assets/vendor-D62veMZP.js">
     <link rel="modulepreload" crossorigin href="/assets/http-DhXgJQ-f.js">

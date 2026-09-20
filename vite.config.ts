@@ -2,7 +2,35 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    {
+      name: 'stub-workbox',
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          if (req.url && (req.url.includes('workbox-precaching') || req.url.includes('/sw.js') || req.url.includes('/service-worker.js'))) {
+            res.setHeader('Content-Type', 'application/javascript');
+            res.end('export default {}; export const precacheAndRoute = () => {};');
+            return;
+          }
+          next();
+        });
+      },
+      resolveId(id) {
+        if (id.includes('workbox-')) {
+          return '\0' + id;
+        }
+      },
+      load(id) {
+        if (id.startsWith('\0workbox-')) {
+          return 'export default {}; export const precacheAndRoute = () => {};';
+        }
+      },
+    },
+  ],
+  optimizeDeps: {
+    exclude: ['workbox-precaching'],
+  },
   server: {
     port: 3000,
     proxy: {
