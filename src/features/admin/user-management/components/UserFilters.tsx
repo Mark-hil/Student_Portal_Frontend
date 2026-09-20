@@ -72,9 +72,11 @@ export const UserFilters: React.FC<UserFiltersProps> = ({
       >
         <option value="">All Portal Roles</option>
         <option value="student">Students</option>
-        <option value="instructor">Faculty Instructors</option>
-        <option value="staff">Staff Officers</option>
-        <option value="admin">Administrators</option>
+        <option value="lecturer">Lecturers</option>
+        <option value="departmental-head">Department Heads</option>
+        <option value="academic-officer">Academic Officers</option>
+        <option value="finance-officer">Finance Officers</option>
+        <option value="super-admin">Super Administrators</option>
       </select>
 
       <select

@@ -84,9 +84,11 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
               style={{ width: '100%', padding: '10px 14px', border: `1px solid ${C.slate2}`, borderRadius: 10, fontSize: 13.5, background: '#fff', fontWeight: 600 }}
             >
               <option value="student">Student (Nursing / Midwifery)</option>
-              <option value="instructor">Instructor / Lecturer</option>
-              <option value="staff">Staff / Academic Officer</option>
-              <option value="admin">System Administrator</option>
+              <option value="lecturer">Lecturer / Instructor</option>
+              <option value="departmental-head">Departmental Head</option>
+              <option value="academic-officer">Academic Officer</option>
+              <option value="finance-officer">Finance Officer</option>
+              <option value="super-admin">Super Administrator</option>
             </select>
           </div>
 

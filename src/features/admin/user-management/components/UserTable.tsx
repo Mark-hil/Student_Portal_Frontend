@@ -16,6 +16,7 @@ import {
   Key,
   Mail,
   GraduationCap,
+  ShieldCheck,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { adminApi } from '../../../../api/services';
@@ -45,6 +46,7 @@ interface UserTableProps {
   onEdit: (user: User) => void;
   onToggleStatus: (user: User) => void;
   onResetPassword: (user: User) => void;
+  onAssignRole?: (user: User) => void;
 }
 
 export const UserTable: React.FC<UserTableProps> = ({
@@ -64,7 +66,30 @@ export const UserTable: React.FC<UserTableProps> = ({
   onEdit,
   onToggleStatus,
   onResetPassword,
+  onAssignRole,
 }) => {
+  const getRoleBadgeConfig = (role: string) => {
+    switch (role) {
+      case 'super-admin':
+      case 'admin':
+        return { bg: '#ffe4e6', text: '#be123c', border: '#fecdd3', label: 'Super Admin' };
+      case 'academic-officer':
+      case 'staff':
+        return { bg: '#e0e7ff', text: '#3730a3', border: '#c7d2fe', label: 'Academic Officer' };
+      case 'departmental-head':
+        return { bg: '#f3e8ff', text: '#6b21a8', border: '#e9d5ff', label: 'Dept Head' };
+      case 'lecturer':
+      case 'instructor':
+        return { bg: '#e0f2fe', text: '#0369a1', border: '#bae6fd', label: 'Lecturer' };
+      case 'finance-officer':
+      case 'finance':
+        return { bg: '#dcfce7', text: '#15803d', border: '#bbf7d0', label: 'Finance Officer' };
+      case 'student':
+      default:
+        return { bg: C.slate1, text: C.slate7, border: C.slate2, label: 'Student' };
+    }
+  };
+
   const activeStudents = users.filter((u: User) => u.role === 'student' && !u.is_deleted);
   const allActiveSelected =
     activeStudents.length > 0 &&
@@ -290,42 +315,76 @@ export const UserTable: React.FC<UserTableProps> = ({
                     </td>
 
                     <td style={{ padding: '14px 16px' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        <Badge
-                          label={u.role}
-                          color={u.role === 'student' ? C.slate1 : u.role === 'instructor' ? C.indigoL : C.roseL}
-                          text={u.role === 'student' ? C.slate7 : u.role === 'instructor' ? C.indigo : C.rose}
-                        />
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                          <span
-                            style={{
-                              fontSize: 10.5,
-                              fontWeight: 700,
-                              padding: '2px 6px',
-                              borderRadius: 4,
-                              background: isActive ? '#dcfce7' : '#fee2e2',
-                              color: isActive ? '#15803d' : '#b91c1c',
-                            }}
-                          >
-                            {isActive ? 'Active Login' : 'Suspended'}
-                          </span>
-                          {isStudent && (
+                      {(() => {
+                        const roleCfg = getRoleBadgeConfig(u.role);
+                        return (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                             <span
                               style={{
-                                fontSize: 10.5,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                fontSize: 11,
                                 fontWeight: 700,
-                                color: isRegistered ? '#15803d' : '#b45309',
-                                background: isRegistered ? '#dcfce7' : '#fef3c7',
-                                border: isRegistered ? '1px solid #bbf7d0' : '1px solid #fde68a',
-                                padding: '1px 5px',
-                                borderRadius: 4,
+                                padding: '2px 8px',
+                                borderRadius: 6,
+                                background: roleCfg.bg,
+                                color: roleCfg.text,
+                                border: `1px solid ${roleCfg.border}`,
+                                width: 'fit-content',
                               }}
                             >
-                              {isRegistered ? 'Reg' : 'Pending'}
+                              {roleCfg.label}
                             </span>
-                          )}
-                        </div>
-                      </div>
+                            {u.assigned_functions && u.assigned_functions.length > 0 && (
+                              <span
+                                style={{
+                                  fontSize: 10,
+                                  color: '#6b21a8',
+                                  background: '#faf5ff',
+                                  padding: '1px 5px',
+                                  borderRadius: 4,
+                                  border: '1px solid #f3e8ff',
+                                  width: 'fit-content',
+                                  fontWeight: 600,
+                                }}
+                                title={`Assigned functions: ${u.assigned_functions.join(', ')}`}
+                              >
+                                {u.assigned_functions.length} custom fns
+                              </span>
+                            )}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                              <span
+                                style={{
+                                  fontSize: 10.5,
+                                  fontWeight: 700,
+                                  padding: '2px 6px',
+                                  borderRadius: 4,
+                                  background: isActive ? '#dcfce7' : '#fee2e2',
+                                  color: isActive ? '#15803d' : '#b91c1c',
+                                }}
+                              >
+                                {isActive ? 'Active Login' : 'Suspended'}
+                              </span>
+                              {isStudent && (
+                                <span
+                                  style={{
+                                    fontSize: 10.5,
+                                    fontWeight: 700,
+                                    color: isRegistered ? '#15803d' : '#b45309',
+                                    background: isRegistered ? '#dcfce7' : '#fef3c7',
+                                    border: isRegistered ? '1px solid #bbf7d0' : '1px solid #fde68a',
+                                    padding: '1px 5px',
+                                    borderRadius: 4,
+                                  }}
+                                >
+                                  {isRegistered ? 'Reg' : 'Pending'}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </td>
 
                     <td style={{ padding: '14px 16px' }}>
@@ -533,6 +592,29 @@ export const UserTable: React.FC<UserTableProps> = ({
                             }}
                           >
                             <FileText size={12} /> Slip
+                          </button>
+                        )}
+
+                        {onAssignRole && (
+                          <button
+                            type="button"
+                            onClick={() => onAssignRole(u)}
+                            title="Assign Institutional Role & Functions"
+                            style={{
+                              padding: '4px 8px',
+                              background: '#f5f3ff',
+                              border: '1px solid #ddd6fe',
+                              borderRadius: 6,
+                              fontSize: 11.5,
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              color: '#7c3aed',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 3,
+                            }}
+                          >
+                            <ShieldCheck size={12} /> Role
                           </button>
                         )}
 

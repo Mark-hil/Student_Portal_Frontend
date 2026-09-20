@@ -82,12 +82,16 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
   });
   const unread = (notifData?.results ?? []).filter((n: any) => !n.read).length;
 
-  const isStudent = currentUser.role === 'student';
-  const isLecturer = currentUser.role === 'instructor';
-  const isFinance = currentUser.role === 'finance';
-  const isAdmin = currentUser.role === 'admin';
-  const isStaff = currentUser.role === 'staff';
-  const isOfficer = isStaff || isAdmin;
+  const isSuperAdmin = currentUser.role === 'super-admin' || currentUser.role === 'admin';
+  const isAcademicOfficer = currentUser.role === 'academic-officer' || currentUser.role === 'staff';
+  const isDepartmentalHead = currentUser.role === 'departmental-head';
+  const isLecturer = currentUser.role === 'lecturer' || currentUser.role === 'instructor';
+  const isFinance = currentUser.role === 'finance-officer' || currentUser.role === 'finance';
+  const isStudent = currentUser.role === 'student' || (!isSuperAdmin && !isAcademicOfficer && !isDepartmentalHead && !isLecturer && !isFinance);
+
+  const isAdmin = isSuperAdmin;
+  const isStaff = isAcademicOfficer;
+  const isOfficer = isSuperAdmin || isAcademicOfficer || isDepartmentalHead;
 
   const NAV_STUDENT = [
     { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard },
@@ -120,6 +124,14 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
     { id: 'notifications', label: 'Notifications', Icon: Bell },
     { id: 'profile', label: 'Profile', Icon: User },
   ];
+  const NAV_DEPT_HEAD = [
+    { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard },
+    { id: 'courses_admin', label: 'Curriculum & Courses', Icon: BookOpen },
+    { id: 'review', label: 'Review Queue', Icon: ClipboardCheck },
+    { id: 'users', label: 'Department Directory', Icon: Users },
+    { id: 'notifications', label: 'Notifications', Icon: Bell },
+    { id: 'profile', label: 'Profile', Icon: User },
+  ];
   const NAV_ADMIN = [
     { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard },
     { id: 'bursar', label: 'Bursar & Accounts', Icon: Coins },
@@ -134,9 +146,11 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
     ? NAV_FINANCE
     : isLecturer
     ? NAV_LECTURER
-    : isAdmin
+    : isSuperAdmin
     ? NAV_ADMIN
-    : isStaff
+    : isDepartmentalHead
+    ? NAV_DEPT_HEAD
+    : isAcademicOfficer
     ? NAV_STAFF
     : NAV_STUDENT;
 
@@ -186,21 +200,25 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
   const initials = (currentUser.first_name?.[0] ?? '') + (currentUser.last_name?.[0] ?? '');
   const roleLabel = isFinance
     ? 'Finance Directorate'
-    : isAdmin
-    ? 'System Admin'
-    : isStaff
+    : isSuperAdmin
+    ? 'Super Admin'
+    : isAcademicOfficer
     ? 'Academic Office'
+    : isDepartmentalHead
+    ? 'Departmental Head'
     : isLecturer
     ? 'Faculty Portal'
     : 'Student Hub';
   const roleColor = isFinance
     ? '#d97706'
-    : isAdmin
+    : isSuperAdmin
+    ? '#e11d48'
+    : isAcademicOfficer
     ? '#6366f1'
-    : isStaff
-    ? '#ec4899'
+    : isDepartmentalHead
+    ? '#9333ea'
     : isLecturer
-    ? '#8b5cf6'
+    ? '#0284c7'
     : '#10b981';
 
   // Sidebar content (shared between desktop sidebar and mobile drawer)

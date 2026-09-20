@@ -150,9 +150,15 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
               style={{ width: '100%', padding: '9px 12px', border: `1px solid ${C.slate2}`, borderRadius: 8, fontSize: 13, background: '#fff' }}
             >
               <option value="student">Student</option>
-              <option value="instructor">Instructor</option>
-              <option value="staff">Staff Officer</option>
-              <option value="admin">Administrator</option>
+              <option value="lecturer">Lecturer / Instructor</option>
+              <option value="departmental-head">Departmental Head</option>
+              <option value="academic-officer">Academic Officer</option>
+              <option value="finance-officer">Finance Officer</option>
+              <option value="super-admin">Super Administrator</option>
+              {/* Legacy fallback options */}
+              {['admin', 'staff', 'instructor', 'finance'].includes(role) && (
+                <option value={role} disabled>Legacy: {role}</option>
+              )}
             </select>
           </div>
         </div>

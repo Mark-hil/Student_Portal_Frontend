@@ -14,6 +14,7 @@ import type {
   MOHVerificationResult, MOHUploadResult, StudentRegistrationPayload,
   AcademicProgressionLog, PromoteStudentPayload, DemoteStudentPayload,
   WithdrawStudentPayload, ReinstateStudentPayload, BulkPromotePayload, DeletionPrecheckResult,
+  PortalRoleInfo, PortalFunction,
 } from '../types';
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -146,6 +147,15 @@ export const adminApi = {
     ),
   getProgressionHistory: (id: string) =>
     client.get<AcademicProgressionLog[]>(`/users/manage/${id}/progression-history/`),
+  getRolesAndFunctions: () =>
+    client.get<{ roles: PortalRoleInfo[]; functions: PortalFunction[] }>(
+      '/users/manage/roles-and-functions/'
+    ),
+  assignRoleAndFunctions: (userId: string, payload: { role?: string; assigned_functions?: string[] }) =>
+    client.post<{ status: string; message: string; user: User }>(
+      `/users/manage/${userId}/assign-role-and-functions/`,
+      payload
+    ),
 };
 
 // ── Courses ───────────────────────────────────────────────────────────────────

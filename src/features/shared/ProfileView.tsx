@@ -46,8 +46,9 @@ export function ProfileView({ user, onUserUpdate, onNav }: Props) {
   const [isSavingPassword, setIsSavingPassword] = useState(false);
 
   const isStudent = user.role === 'student';
-  const isLecturer = user.role === 'instructor';
-  const isOfficer = user.role === 'staff' || user.role === 'admin';
+  const isLecturer = user.role === 'lecturer' || user.role === 'instructor';
+  const isFinance = user.role === 'finance-officer' || user.role === 'finance';
+  const isOfficer = user.role === 'super-admin' || user.role === 'admin' || user.role === 'academic-officer' || user.role === 'staff' || user.role === 'departmental-head' || isFinance;
 
   // Role-specific Queries
   const { data: gpa } = useQuery({
@@ -760,7 +761,13 @@ export function ProfileView({ user, onUserUpdate, onNav }: Props) {
             <Card style={{ padding: '16px 20px', borderLeft: `4px solid ${C.purple}` }}>
               <div style={{ fontSize: 11, color: C.slate4, textTransform: 'uppercase', letterSpacing: '.05em', fontWeight: 600 }}>System Privileges</div>
               <div style={{ fontSize: 17, fontWeight: 700, color: C.slate9, marginTop: 4 }}>
-                {user.role === 'admin' ? 'Super Administrator' : 'Academic Officer'}
+                {user.role === 'super-admin' || user.role === 'admin'
+                  ? 'Super Administrator'
+                  : user.role === 'departmental-head'
+                  ? 'Departmental Head'
+                  : user.role === 'finance-officer' || user.role === 'finance'
+                  ? 'Finance Officer'
+                  : 'Academic Officer'}
               </div>
               <div style={{ fontSize: 11, color: C.purple, marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
                 <Shield size={12} /> Full Institutional Authority

@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { C } from '../../utils/theme';
-import { adminApi } from '../../api/services';
+import { adminApi, usersApi } from '../../api/services';
 import { useBreakpoint } from '../../hooks/useBreakpoint';
 import type { User, AcademicProgressionLog, DeletionPrecheckResult } from '../../types';
 
@@ -28,6 +28,7 @@ import { ReinstateStudentModal } from './user-management/modals/ReinstateStudent
 import { ProgressionHistoryModal } from './user-management/modals/ProgressionHistoryModal';
 import { DeleteUserModal } from './user-management/modals/DeleteUserModal';
 import { BulkPromoteModal } from './user-management/modals/BulkPromoteModal';
+import { AssignRoleAndFunctionsModal } from './user-management/modals/AssignRoleAndFunctionsModal';
 
 export function UserManagement() {
   const { isMobile } = useBreakpoint();
@@ -49,6 +50,7 @@ export function UserManagement() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [resetPasswordTarget, setResetPasswordTarget] = useState<User | null>(null);
+  const [assignRoleTarget, setAssignRoleTarget] = useState<User | null>(null);
   const [isMOHModalOpen, setIsMOHModalOpen] = useState(false);
   const [viewingStudentRegistration, setViewingStudentRegistration] = useState<User | null>(null);
 
@@ -67,6 +69,13 @@ export function UserManagement() {
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [deletionPrecheckData, setDeletionPrecheckData] = useState<DeletionPrecheckResult | null>(null);
   const [isLoadingPrecheck, setIsLoadingPrecheck] = useState(false);
+
+  // Roles & Functions Catalog
+  const { data: rolesAndFunctionsData } = useQuery({
+    queryKey: ['portal-roles-and-functions'],
+    queryFn: () => adminApi.getRolesAndFunctions().then((r: { data: { roles: any[]; functions: any[] } }) => r.data),
+    staleTime: 5 * 60_000,
+  });
 
   // Queries
   const { data, isLoading } = useQuery({
@@ -236,6 +245,19 @@ export function UserManagement() {
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.error || err.response?.data?.detail || 'Bulk promotion failed.');
+    }
+  });
+
+  const assignRoleMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: { role?: any; assigned_functions?: string[] } }) =>
+      adminApi.assignRoleAndFunctions(id, payload),
+    onSuccess: (res) => {
+      toast.success(res.data.message || 'Role and capabilities updated successfully!');
+      qc.invalidateQueries({ queryKey: ['users', 'list'] });
+      setAssignRoleTarget(null);
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.detail || 'Failed to assign role & functions.');
     }
   });
 
@@ -437,6 +459,7 @@ export function UserManagement() {
           }
         }}
         onResetPassword={(u) => setResetPasswordTarget(u)}
+        onAssignRole={(u) => setAssignRoleTarget(u)}
       />
 
       {/* ── MODALS ── */}
@@ -568,6 +591,23 @@ export function UserManagement() {
             })
           }
           isPending={bulkPromoteMutation.isPending}
+        />
+      )}
+
+      {/* Assign Institutional Role & Functions Modal */}
+      {assignRoleTarget && (
+        <AssignRoleAndFunctionsModal
+          target={assignRoleTarget}
+          roles={rolesAndFunctionsData?.roles || []}
+          functions={rolesAndFunctionsData?.functions || []}
+          onClose={() => setAssignRoleTarget(null)}
+          onConfirm={({ role, assigned_functions }) =>
+            assignRoleMutation.mutate({
+              id: assignRoleTarget.id,
+              payload: { role, assigned_functions },
+            })
+          }
+          isPending={assignRoleMutation.isPending}
         />
       )}
     </div>

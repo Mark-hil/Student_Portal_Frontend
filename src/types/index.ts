@@ -4,8 +4,35 @@
  */
 
 // ── Auth / User ───────────────────────────────────────────────────────────────
-export type Role = 'student' | 'instructor' | 'staff' | 'finance' | 'admin';
+export type Role =
+  | 'super-admin'
+  | 'academic-officer'
+  | 'departmental-head'
+  | 'lecturer'
+  | 'finance-officer'
+  | 'student'
+  // Legacy / alternate aliases
+  | 'admin'
+  | 'staff'
+  | 'instructor'
+  | 'finance';
+
 export type AcademicStatus = 'active' | 'probation' | 'repeating' | 'withdrawn' | 'suspended' | 'graduated' | 'deleted';
+
+export interface PortalFunction {
+  code: string;
+  name: string;
+  category: string;
+  description: string;
+}
+
+export interface PortalRoleInfo {
+  code: Role;
+  name: string;
+  description: string;
+  badge_color: string;
+  default_functions: string[];
+}
 
 export interface UserProfile {
   enrollment_year:  number | null;
@@ -53,6 +80,8 @@ export interface User {
   last_name:      string;
   full_name:      string;
   role:           Role;
+  assigned_functions?: string[];
+  effective_functions?: string[];
   avatar:         string | null;
   phone:          string;
   department:     string;
