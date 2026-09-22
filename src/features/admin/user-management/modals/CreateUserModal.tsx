@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { Users, Phone, Sparkles, Check, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Users, Phone, Sparkles, Check, Loader2, Shield } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { C } from '../../../../utils/theme';
 import { useBreakpoint } from '../../../../hooks/useBreakpoint';
+import type { User } from '../../../../types';
 
 export interface CreateUserData {
   first_name: string;
@@ -17,19 +18,28 @@ export interface CreateUserData {
 }
 
 interface CreateUserModalProps {
+  mode?: 'students' | 'staff';
   isOpen: boolean;
+  currentUser?: User;
   onClose: () => void;
   onCreate: (userData: CreateUserData) => void;
   isPending: boolean;
 }
 
 export const CreateUserModal: React.FC<CreateUserModalProps> = ({
+  mode = 'students',
   isOpen,
+  currentUser,
   onClose,
   onCreate,
   isPending,
 }) => {
   const { isMobile } = useBreakpoint();
+  const isActorSuperAdmin =
+    currentUser?.role === 'super_admin' ||
+    currentUser?.role === 'super-admin' ||
+    currentUser?.role === 'admin' ||
+    (currentUser as any)?.is_superuser;
 
   const [newUser, setNewUser] = useState<CreateUserData>({
     first_name: '',
@@ -37,11 +47,27 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
     email: '',
     phone: '',
     password: '',
-    role: 'student',
+    role: mode === 'students' ? 'student' : 'lecturer',
     program: 'nursing',
     class_name: '100',
-    department: '',
+    department: mode === 'students' ? 'Nursing' : '',
   });
+
+  useEffect(() => {
+    if (isOpen) {
+      setNewUser({
+        first_name: '',
+        last_name: '',
+        email: '',
+        phone: '',
+        password: '',
+        role: mode === 'students' ? 'student' : 'lecturer',
+        program: 'nursing',
+        class_name: '100',
+        department: mode === 'students' ? 'Nursing' : '',
+      });
+    }
+  }, [isOpen, mode]);
 
   if (!isOpen) return null;
 
@@ -58,41 +84,60 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
     onCreate(newUser);
   };
 
+  const isStudentCreation = newUser.role === 'student';
+
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 110, padding: 20 }}>
       <div style={{ background: '#fff', borderRadius: 20, padding: 28, width: 540, maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18, borderBottom: `1px solid ${C.slate1}`, paddingBottom: 14 }}>
-          <div style={{ width: 42, height: 42, borderRadius: 12, background: C.indigoL, color: C.indigo, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Users size={22} />
+          <div
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 12,
+              background: isStudentCreation ? '#ecfdf5' : '#e0e7ff',
+              color: isStudentCreation ? '#047857' : '#3730a3',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {isStudentCreation ? <Users size={22} /> : <Shield size={22} />}
           </div>
           <div>
             <h3 style={{ margin: 0, fontSize: 19, fontWeight: 800, color: C.slate9 }}>
-              {newUser.role === 'student' ? 'Register New Student Account' : 'Create User Account'}
+              {isStudentCreation ? 'Register New Student Account' : 'Add Staff / Faculty Member'}
             </h3>
             <p style={{ margin: 0, fontSize: 12.5, color: C.slate5 }}>
-              {newUser.role === 'student' ? 'Provisions institutional ASDAM Student ID and dispatches credentials via SMS/Email' : 'Add an instructor or staff officer to the portal'}
+              {isStudentCreation
+                ? 'Provisions institutional ASDAM Student ID and dispatches credentials via SMS/Email'
+                : 'Assign institutional staff role, department, and portal credentials'}
             </p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.slate7, marginBottom: 5 }}>Account Role</label>
-            <select
-              value={newUser.role}
-              onChange={e => setNewUser({ ...newUser, role: e.target.value })}
-              style={{ width: '100%', padding: '10px 14px', border: `1px solid ${C.slate2}`, borderRadius: 10, fontSize: 13.5, background: '#fff', fontWeight: 600 }}
-            >
-              <option value="student">Student (Nursing / Midwifery)</option>
-              <option value="lecturer">Lecturer / Instructor</option>
-              <option value="departmental-head">Departmental Head</option>
-              <option value="academic-officer">Academic Officer</option>
-              <option value="finance-officer">Finance Officer</option>
-              <option value="super-admin">Super Administrator</option>
-            </select>
-          </div>
-
-          {newUser.role === 'student' && (
+          {/* Role selector */}
+          {mode === 'staff' ? (
+            <div>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.slate7, marginBottom: 5 }}>
+                Staff Institutional Role
+              </label>
+              <select
+                value={newUser.role}
+                onChange={e => setNewUser({ ...newUser, role: e.target.value })}
+                style={{ width: '100%', padding: '10px 14px', border: `1px solid ${C.slate2}`, borderRadius: 10, fontSize: 13.5, background: '#fff', fontWeight: 600 }}
+              >
+                <option value="lecturer">Lecturer / Faculty</option>
+                <option value="head_of_department">Head of Department (HOD)</option>
+                <option value="academic_officer">Academic Officer</option>
+                <option value="finance">Finance Officer</option>
+                {isActorSuperAdmin && (
+                  <option value="super_admin">Super Administrator</option>
+                )}
+              </select>
+            </div>
+          ) : (
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
               <div>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.slate7, marginBottom: 5 }}>Program of Study</label>
@@ -120,11 +165,12 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
             </div>
           )}
 
+          {/* First & Last Name */}
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
             <div>
               <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.slate7, marginBottom: 5 }}>First Name</label>
               <input
-                placeholder="e.g. Ama"
+                placeholder={isStudentCreation ? 'e.g. Ama' : 'e.g. Kwesi'}
                 value={newUser.first_name}
                 onChange={e => setNewUser({ ...newUser, first_name: e.target.value })}
                 style={{ width: '100%', padding: '10px 14px', border: `1px solid ${C.slate2}`, borderRadius: 10, fontSize: 13.5, boxSizing: 'border-box' }}
@@ -133,7 +179,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
             <div>
               <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.slate7, marginBottom: 5 }}>Last Name / Surname</label>
               <input
-                placeholder="e.g. Mensah"
+                placeholder={isStudentCreation ? 'e.g. Mensah' : 'e.g. Appiah'}
                 value={newUser.last_name}
                 onChange={e => setNewUser({ ...newUser, last_name: e.target.value })}
                 style={{ width: '100%', padding: '10px 14px', border: `1px solid ${C.slate2}`, borderRadius: 10, fontSize: 13.5, boxSizing: 'border-box' }}
@@ -141,17 +187,19 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
             </div>
           </div>
 
+          {/* Email Address */}
           <div>
             <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.slate7, marginBottom: 5 }}>Email Address</label>
             <input
               type="email"
-              placeholder="e.g. ama.mensah@gmail.com"
+              placeholder={isStudentCreation ? 'e.g. ama.mensah@gmail.com' : 'e.g. kwesi.appiah@uniportal.edu'}
               value={newUser.email}
               onChange={e => setNewUser({ ...newUser, email: e.target.value })}
               style={{ width: '100%', padding: '10px 14px', border: `1px solid ${C.slate2}`, borderRadius: 10, fontSize: 13.5, boxSizing: 'border-box' }}
             />
           </div>
 
+          {/* Phone Number */}
           <div>
             <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.slate7, marginBottom: 5 }}>
               Primary Phone Number (SMS Gateway Recipient)
@@ -171,11 +219,12 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
             </div>
           </div>
 
-          {newUser.role !== 'student' && (
+          {/* Department field for Staff */}
+          {!isStudentCreation && (
             <div>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.slate7, marginBottom: 5 }}>Department</label>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.slate7, marginBottom: 5 }}>Department / Faculty</label>
               <input
-                placeholder="e.g. Department of Nursing Sciences"
+                placeholder="e.g. Computer Science, Nursing Sciences, or General Sciences"
                 value={newUser.department}
                 onChange={e => setNewUser({ ...newUser, department: e.target.value })}
                 style={{ width: '100%', padding: '10px 14px', border: `1px solid ${C.slate2}`, borderRadius: 10, fontSize: 13.5, boxSizing: 'border-box' }}
@@ -183,25 +232,26 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
             </div>
           )}
 
+          {/* Temporary Password */}
           <div>
             <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.slate7, marginBottom: 5 }}>
               Temporary Password (Optional)
             </label>
             <input
               type="text"
-              placeholder="Leave blank to auto-generate serial code (e.g. SN-XXXXXX)"
+              placeholder={isStudentCreation ? 'Leave blank to auto-generate serial code (e.g. SN-XXXXXX)' : 'Leave blank for default: TempPass123!'}
               value={newUser.password}
               onChange={e => setNewUser({ ...newUser, password: e.target.value })}
               style={{ width: '100%', padding: '10px 14px', border: `1px solid ${C.slate2}`, borderRadius: 10, fontSize: 13.5, boxSizing: 'border-box' }}
             />
           </div>
 
-          {newUser.role === 'student' && (
+          {isStudentCreation && (
             <div style={{ padding: '12px 14px', background: '#eff6ff', borderRadius: 10, border: '1px solid #bfdbfe', fontSize: 12, color: '#1e40af', lineHeight: 1.5 }}>
               <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                 <Sparkles size={14} /> Automatic ASDAM ID & Profile Registration Gate
               </div>
-              Upon account creation, the student is assigned an official Student ID (e.g. <code>ASDAM/NUR/26/001</code>). They will receive an SMS and Email with their credentials and the Portal URL (<code>http://localhost:3000</code>). Upon logging in, they will be hard-gated to complete the 4-step registration wizard (Ghana Card, Bio, Residential & Digital Address GPS, Guardian details) before accessing portal services.
+              Upon account creation, the student is assigned an official Student ID (e.g. <code>ASDAM/NUR/26/001</code>). They will receive an SMS and Email with their credentials and the Portal URL.
             </div>
           )}
 
@@ -216,10 +266,10 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
             <button
               type="submit"
               disabled={isPending}
-              style={{ padding: '10px 22px', background: C.indigo, color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 13.5, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
+              style={{ padding: '10px 22px', background: isStudentCreation ? '#059669' : C.indigo, color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 13.5, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
             >
               {isPending ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-              {isPending ? 'Registering...' : 'Register User'}
+              {isPending ? 'Registering...' : isStudentCreation ? 'Register Student' : 'Add Staff Member'}
             </button>
           </div>
         </form>

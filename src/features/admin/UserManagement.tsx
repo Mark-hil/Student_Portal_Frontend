@@ -1,14 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   UploadCloud,
   Download,
   Plus,
   Loader2,
+  GraduationCap,
+  Users,
+  Building,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { C } from '../../utils/theme';
-import { adminApi, usersApi } from '../../api/services';
+import { adminApi } from '../../api/services';
 import { useBreakpoint } from '../../hooks/useBreakpoint';
 import type { User, AcademicProgressionLog, DeletionPrecheckResult } from '../../types';
 
@@ -30,19 +33,35 @@ import { DeleteUserModal } from './user-management/modals/DeleteUserModal';
 import { BulkPromoteModal } from './user-management/modals/BulkPromoteModal';
 import { AssignRoleAndFunctionsModal } from './user-management/modals/AssignRoleAndFunctionsModal';
 
-export function UserManagement() {
+export interface UserManagementProps {
+  initialMode?: 'students' | 'staff';
+  user?: User;
+}
+
+export function UserManagement({ initialMode = 'students', user }: UserManagementProps) {
   const { isMobile } = useBreakpoint();
   const qc = useQueryClient();
+
+  // Active Mode: Students vs Staff & Faculty
+  const [activeTab, setActiveTab] = useState<'students' | 'staff'>(initialMode);
+
+  useEffect(() => {
+    if (initialMode) {
+      setActiveTab(initialMode);
+    }
+  }, [initialMode]);
 
   // Filters State
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [programFilter, setProgramFilter] = useState('');
+  const [classFilter, setClassFilter] = useState('');
+  const [departmentFilter, setDepartmentFilter] = useState('');
   const [registrationFilter, setRegistrationFilter] = useState('');
   const [academicStatusFilter, setAcademicStatusFilter] = useState('');
   const [includeDeleted, setIncludeDeleted] = useState(false);
 
-  // Bulk Selection State
+  // Bulk Selection State (for students)
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [exporting, setExporting] = useState(false);
 
@@ -70,6 +89,14 @@ export function UserManagement() {
   const [deletionPrecheckData, setDeletionPrecheckData] = useState<DeletionPrecheckResult | null>(null);
   const [isLoadingPrecheck, setIsLoadingPrecheck] = useState(false);
 
+  // Departmental Head Context
+  const isHod =
+    user?.role === 'head_of_department' ||
+    user?.role === 'head-of-department' ||
+    user?.role === 'departmental-head' ||
+    user?.role === 'hod';
+  const hodDepartment = isHod ? user?.department || '' : '';
+
   // Roles & Functions Catalog
   const { data: rolesAndFunctionsData } = useQuery({
     queryKey: ['portal-roles-and-functions'],
@@ -77,18 +104,38 @@ export function UserManagement() {
     staleTime: 5 * 60_000,
   });
 
-  // Queries
+  // User List Query filtered strictly by activeTab ('student' vs 'staff')
   const { data, isLoading } = useQuery({
-    queryKey: ['users', 'list', { search, roleFilter, programFilter, registrationFilter, academicStatusFilter, includeDeleted }],
-    queryFn: () => adminApi.listUsers({
-      search,
-      role: roleFilter,
-      program: programFilter,
-      is_registered: registrationFilter,
-      academic_status: academicStatusFilter,
-      include_deleted: includeDeleted ? 'true' : 'false',
-    }).then(r => r.data),
-    staleTime: 30_000
+    queryKey: [
+      'users',
+      'list',
+      {
+        user_type: activeTab === 'students' ? 'student' : 'staff',
+        search,
+        role: roleFilter,
+        program: activeTab === 'students' ? programFilter : '',
+        class_name: activeTab === 'students' ? classFilter : '',
+        department: activeTab === 'staff' ? (departmentFilter || hodDepartment) : departmentFilter,
+        registration: activeTab === 'students' ? registrationFilter : '',
+        academicStatus: activeTab === 'students' ? academicStatusFilter : '',
+        includeDeleted,
+      },
+    ],
+    queryFn: () =>
+      adminApi
+        .listUsers({
+          user_type: activeTab === 'students' ? 'student' : 'staff',
+          search,
+          role: roleFilter,
+          program: activeTab === 'students' ? programFilter : '',
+          class_name: activeTab === 'students' ? classFilter : '',
+          department: activeTab === 'staff' ? (departmentFilter || hodDepartment) : departmentFilter,
+          is_registered: activeTab === 'students' ? registrationFilter : '',
+          academic_status: activeTab === 'students' ? academicStatusFilter : '',
+          include_deleted: includeDeleted ? 'true' : 'false',
+        })
+        .then((r) => r.data),
+    staleTime: 30_000,
   });
 
   const users: User[] = data?.results ?? [];
@@ -97,13 +144,17 @@ export function UserManagement() {
   const createMutation = useMutation({
     mutationFn: (newUser: any) => adminApi.createUser(newUser),
     onSuccess: () => {
-      toast.success('User account created successfully! Credentials dispatched.');
+      toast.success(
+        activeTab === 'students'
+          ? 'Student account created successfully! Credentials dispatched.'
+          : 'Staff member account registered successfully!'
+      );
       qc.invalidateQueries({ queryKey: ['users', 'list'] });
       setIsCreateModalOpen(false);
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.detail || 'Failed to create user.');
-    }
+      toast.error(err.response?.data?.detail || 'Failed to create user account.');
+    },
   });
 
   const updateMutation = useMutation({
@@ -115,29 +166,30 @@ export function UserManagement() {
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.detail || 'Failed to update user.');
-    }
+    },
   });
 
   const toggleStatusMutation = useMutation({
     mutationFn: (id: string) => adminApi.toggleUserStatus(id),
-    onSuccess: (res) => {
-      toast.success(`User account is now ${res.data.is_active ? 'Active' : 'Suspended'}`);
+    onSuccess: (res: any) => {
+      const active = res.data?.is_active ?? true;
+      toast.success(`Account ${active ? 'activated' : 'suspended'} successfully.`);
       qc.invalidateQueries({ queryKey: ['users', 'list'] });
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.detail || 'Failed to toggle account status.');
-    }
+      toast.error(err.response?.data?.detail || 'Failed to update status.');
+    },
   });
 
   const resetPasswordMutation = useMutation({
     mutationFn: ({ id, pass }: { id: string; pass?: string }) => adminApi.resetUserPassword(id, pass),
-    onSuccess: (res) => {
-      toast.success(res.data.detail || 'Password reset successfully!');
+    onSuccess: () => {
+      toast.success('Password reset successfully!');
       setResetPasswordTarget(null);
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.detail || 'Failed to reset password.');
-    }
+    },
   });
 
   const promoteMutation = useMutation({
@@ -150,59 +202,58 @@ export function UserManagement() {
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.error || err.response?.data?.detail || 'Failed to promote student.');
-    }
+    },
   });
 
   const demoteMutation = useMutation({
-    mutationFn: ({ id, target_level, reason }: { id: string; target_level?: string; reason: string }) =>
-      adminApi.demoteStudent(id, { target_level, reason }),
+    mutationFn: ({ id, target_level, reason }: { id: string; target_level?: string; reason?: string }) =>
+      adminApi.demoteStudent(id, { target_level: target_level || '100', reason: reason || 'Academic review' }),
     onSuccess: (res) => {
-      toast.success(res.data.message || 'Student demoted/retained successfully!');
+      toast.success(res.data.message || 'Student level adjusted.');
       qc.invalidateQueries({ queryKey: ['users', 'list'] });
       setDemoteTarget(null);
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.error || err.response?.data?.detail || 'Failed to demote student.');
-    }
+    },
   });
 
   const withdrawMutation = useMutation({
-    mutationFn: ({ id, reason, category }: { id: string; reason: string; category?: any }) =>
+    mutationFn: ({ id, reason, category }: { id: string; reason: string; category?: string }) =>
       adminApi.withdrawStudent(id, { reason, withdrawal_category: category }),
     onSuccess: (res) => {
-      toast.success(res.data.message || 'Student withdrawn successfully.');
+      toast.success(res.data.message || 'Student marked as officially withdrawn.');
       qc.invalidateQueries({ queryKey: ['users', 'list'] });
       setWithdrawTarget(null);
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.error || err.response?.data?.detail || 'Failed to withdraw student.');
-    }
+    },
   });
 
   const reinstateMutation = useMutation({
     mutationFn: ({ id, target_level, notes }: { id: string; target_level?: string; notes?: string }) =>
-      adminApi.reinstateStudent(id, { target_level, notes }),
+      adminApi.reinstateStudent(id, { target_level: target_level || '100', notes }),
     onSuccess: (res) => {
-      toast.success(res.data.message || 'Student reinstated to active status.');
+      toast.success(res.data.message || 'Student reinstated to active standing.');
       qc.invalidateQueries({ queryKey: ['users', 'list'] });
       setReinstateTarget(null);
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.error || err.response?.data?.detail || 'Failed to reinstate student.');
-    }
+    },
   });
 
   const softDeleteMutation = useMutation({
-    mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
-      adminApi.softDeleteUser(id, reason),
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) => adminApi.softDeleteUser(id, reason),
     onSuccess: (res) => {
-      toast.success(res.data.message || 'User account archived.');
+      toast.success(res.data.message || 'User archived to trash.');
       qc.invalidateQueries({ queryKey: ['users', 'list'] });
       setDeleteTarget(null);
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.error || err.response?.data?.detail || 'Failed to archive user.');
-    }
+    },
   });
 
   const restoreMutation = useMutation({
@@ -213,7 +264,7 @@ export function UserManagement() {
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.error || err.response?.data?.detail || 'Failed to restore user.');
-    }
+    },
   });
 
   const hardDeleteMutation = useMutation({
@@ -226,7 +277,7 @@ export function UserManagement() {
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.error || err.response?.data?.detail || 'Failed to delete user permanently.');
-    }
+    },
   });
 
   const bulkPromoteMutation = useMutation({
@@ -245,7 +296,7 @@ export function UserManagement() {
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.error || err.response?.data?.detail || 'Bulk promotion failed.');
-    }
+    },
   });
 
   const assignRoleMutation = useMutation({
@@ -258,7 +309,7 @@ export function UserManagement() {
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.detail || 'Failed to assign role & functions.');
-    }
+    },
   });
 
   // Action Handlers
@@ -292,52 +343,211 @@ export function UserManagement() {
   const handleExportCsv = async () => {
     try {
       setExporting(true);
-      await adminApi.exportStudentsCsv({ role: roleFilter, search });
-      toast.success('Student directory exported to CSV');
+      await adminApi.exportStudentsCsv({
+        user_type: activeTab === 'students' ? 'student' : 'staff',
+        role: roleFilter,
+        search,
+        department: activeTab === 'staff' ? (departmentFilter || hodDepartment) : departmentFilter,
+      });
+      toast.success(
+        activeTab === 'students'
+          ? 'Student directory exported to CSV'
+          : 'Staff directory exported to CSV'
+      );
     } catch {
-      toast.error('Failed to export students CSV');
+      toast.error('Failed to export CSV directory.');
     } finally {
       setExporting(false);
     }
   };
 
+  const isStudentTab = activeTab === 'students';
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 16 : 24 }}>
-      {/* Header Bar */}
-      <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', flexDirection: isMobile ? 'column' : 'row', gap: 14 }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: isMobile ? 22 : 24, fontWeight: 800, color: C.slate9, letterSpacing: '-0.02em' }}>
-            User Directory & Access Control
-          </h2>
-          <p style={{ margin: '4px 0 0', fontSize: 13.5, color: C.slate5 }}>
-            Manage portal accounts, roles, MOH student onboarding, passwords, and active/suspension status.
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          {/* MOH Upload Button */}
+      {/* Top Tab Bar: Clean Separation between Students & Staff */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 12,
+          borderBottom: `1px solid ${C.slate2}`,
+          paddingBottom: 14,
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            background: '#f1f5f9',
+            padding: 4,
+            borderRadius: 14,
+          }}
+        >
           <button
             type="button"
-            onClick={() => setIsMOHModalOpen(true)}
+            onClick={() => {
+              setActiveTab('students');
+              setSelectedStudentIds([]);
+              setRoleFilter('');
+            }}
             style={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
               gap: 8,
-              padding: '11px 18px',
-              background: '#059669',
-              color: '#fff',
+              padding: '9px 18px',
+              borderRadius: 10,
               border: 'none',
-              borderRadius: 12,
-              fontFamily: 'inherit',
-              fontSize: 14,
-              fontWeight: 700,
+              background: isStudentTab ? '#fff' : 'transparent',
+              color: isStudentTab ? '#047857' : C.slate6,
+              fontWeight: 800,
+              fontSize: 13.5,
               cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(5,150,105,0.25)',
-              width: isMobile ? '100%' : 'auto',
+              boxShadow: isStudentTab ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+              transition: 'all 0.15s ease',
             }}
           >
-            <UploadCloud size={17} /> Upload MOH Students
+            <GraduationCap size={18} />
+            Students & Admissions
+            {isStudentTab && !isLoading && (
+              <span
+                style={{
+                  fontSize: 11,
+                  background: '#ecfdf5',
+                  color: '#047857',
+                  padding: '1px 7px',
+                  borderRadius: 999,
+                  border: '1px solid #a7f3d0',
+                }}
+              >
+                {users.length}
+              </span>
+            )}
           </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab('staff');
+              setSelectedStudentIds([]);
+              setRoleFilter('');
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '9px 18px',
+              borderRadius: 10,
+              border: 'none',
+              background: !isStudentTab ? '#fff' : 'transparent',
+              color: !isStudentTab ? C.indigo : C.slate6,
+              fontWeight: 800,
+              fontSize: 13.5,
+              cursor: 'pointer',
+              boxShadow: !isStudentTab ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <Users size={18} />
+            Staff & Faculty Directory
+            {!isStudentTab && !isLoading && (
+              <span
+                style={{
+                  fontSize: 11,
+                  background: '#e0e7ff',
+                  color: '#3730a3',
+                  padding: '1px 7px',
+                  borderRadius: 999,
+                  border: '1px solid #c7d2fe',
+                }}
+              >
+                {users.length}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* HOD Department Badge if logged in as HOD */}
+        {isHod && hodDepartment && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '7px 14px',
+              background: '#faf5ff',
+              border: '1px solid #e9d5ff',
+              borderRadius: 10,
+              fontSize: 12.5,
+              color: '#7e22ce',
+              fontWeight: 700,
+            }}
+          >
+            <Building size={14} />
+            Department of {hodDepartment}
+          </div>
+        )}
+      </div>
+
+      {/* Header Bar with Action Controls */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: isMobile ? 'flex-start' : 'center',
+          justifyContent: 'space-between',
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: 14,
+        }}
+      >
+        <div>
+          <h2
+            style={{
+              margin: 0,
+              fontSize: isMobile ? 22 : 24,
+              fontWeight: 800,
+              color: C.slate9,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            {isStudentTab ? 'Student Directory & Admissions' : 'Staff & Faculty Access Control'}
+          </h2>
+          <p style={{ margin: '4px 0 0', fontSize: 13.5, color: C.slate5 }}>
+            {isStudentTab
+              ? 'Manage enrolled nursing & midwifery students, MOH roster onboarding, academic standing, and progression.'
+              : 'Oversee lecturers, departmental heads, academic officers, finance team, and granular RBAC permissions.'}
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          {/* MOH Upload Button (Students Mode Only) */}
+          {isStudentTab && (
+            <button
+              type="button"
+              onClick={() => setIsMOHModalOpen(true)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                padding: '11px 18px',
+                background: '#059669',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 12,
+                fontFamily: 'inherit',
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(5,150,105,0.25)',
+                width: isMobile ? '100%' : 'auto',
+              }}
+            >
+              <UploadCloud size={17} /> Upload MOH Students
+            </button>
+          )}
 
           {/* Export CSV Button */}
           <button
@@ -351,8 +561,8 @@ export function UserManagement() {
               gap: 8,
               padding: '11px 18px',
               background: '#fff',
-              color: C.indigo,
-              border: `1px solid ${C.indigo}`,
+              color: isStudentTab ? '#059669' : C.indigo,
+              border: `1px solid ${isStudentTab ? '#a7f3d0' : C.indigo}`,
               borderRadius: 12,
               fontFamily: 'inherit',
               fontSize: 14,
@@ -363,7 +573,7 @@ export function UserManagement() {
             }}
           >
             {exporting ? <Loader2 size={17} className="animate-spin" /> : <Download size={17} />}
-            Export Directory (CSV)
+            {isStudentTab ? 'Export Students (CSV)' : 'Export Staff (CSV)'}
           </button>
 
           {/* Add User Button */}
@@ -376,7 +586,7 @@ export function UserManagement() {
               justifyContent: 'center',
               gap: 8,
               padding: '11px 20px',
-              background: C.indigo,
+              background: isStudentTab ? '#047857' : C.indigo,
               color: '#fff',
               border: 'none',
               borderRadius: 12,
@@ -384,23 +594,28 @@ export function UserManagement() {
               fontSize: 14,
               fontWeight: 700,
               cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(79,70,229,0.3)',
+              boxShadow: isStudentTab ? '0 4px 12px rgba(4,120,87,0.3)' : '0 4px 12px rgba(79,70,229,0.3)',
               width: isMobile ? '100%' : 'auto',
             }}
           >
-            <Plus size={17} /> Add New User
+            <Plus size={17} /> {isStudentTab ? 'Register Student' : 'Add Staff Member'}
           </button>
         </div>
       </div>
 
       {/* Filter Controls Bar */}
       <UserFilters
+        mode={activeTab}
         search={search}
         onSearchChange={setSearch}
         roleFilter={roleFilter}
         onRoleFilterChange={setRoleFilter}
         programFilter={programFilter}
         onProgramFilterChange={setProgramFilter}
+        classFilter={classFilter}
+        onClassFilterChange={setClassFilter}
+        departmentFilter={departmentFilter}
+        onDepartmentFilterChange={setDepartmentFilter}
         registrationFilter={registrationFilter}
         onRegistrationFilterChange={setRegistrationFilter}
         academicStatusFilter={academicStatusFilter}
@@ -410,33 +625,37 @@ export function UserManagement() {
         isMobile={isMobile}
       />
 
-      {/* Bulk Action Controls */}
-      <BulkActionBar
-        selectedCount={selectedStudentIds.length}
-        onBulkPromote={() => setIsBulkPromoteOpen(true)}
-        onClearSelection={() => setSelectedStudentIds([])}
-      />
+      {/* Bulk Action Controls (Students Only) */}
+      {isStudentTab && (
+        <BulkActionBar
+          selectedCount={selectedStudentIds.length}
+          onBulkPromote={() => setIsBulkPromoteOpen(true)}
+          onClearSelection={() => setSelectedStudentIds([])}
+        />
+      )}
 
-      {/* Main Users Table */}
+      {/* Main Users Table cleanly separated by mode */}
       <UserTable
+        mode={activeTab}
         users={users}
+        currentUser={user}
         isLoading={isLoading}
         selectedStudentIds={selectedStudentIds}
         onSelectStudent={(id, selected) => {
           if (selected) {
-            setSelectedStudentIds(prev => [...prev, id]);
+            setSelectedStudentIds((prev) => [...prev, id]);
           } else {
-            setSelectedStudentIds(prev => prev.filter(item => item !== id));
+            setSelectedStudentIds((prev) => prev.filter((item) => item !== id));
           }
         }}
         onSelectAllStudents={(selectAll) => {
-          const activeStudents = users.filter((u: User) => u.role === 'student' && !u.is_deleted);
+          const activeStudents = users.filter((u: User) => !u.is_deleted);
           if (selectAll) {
             const idsToAdd = activeStudents.map((u: User) => u.id);
             setSelectedStudentIds(Array.from(new Set([...selectedStudentIds, ...idsToAdd])));
           } else {
             const activeIds = new Set(activeStudents.map((u: User) => u.id));
-            setSelectedStudentIds(prev => prev.filter(id => !activeIds.has(id)));
+            setSelectedStudentIds((prev) => prev.filter((id) => !activeIds.has(id)));
           }
         }}
         onPromote={(u) => setPromoteTarget(u)}
@@ -454,7 +673,11 @@ export function UserManagement() {
         onEdit={(u) => setEditingUser(u)}
         onToggleStatus={(u) => {
           const isActive = u.is_active !== false;
-          if (window.confirm(`${isActive ? 'Suspend' : 'Activate'} user account for ${u.first_name} ${u.last_name}?`)) {
+          if (
+            window.confirm(
+              `${isActive ? 'Suspend' : 'Activate'} user account for ${u.first_name} ${u.last_name}?`
+            )
+          ) {
             toggleStatusMutation.mutate(u.id);
           }
         }}
@@ -464,9 +687,11 @@ export function UserManagement() {
 
       {/* ── MODALS ── */}
 
-      {/* Create User Modal */}
+      {/* Create User Modal (students vs staff) */}
       <CreateUserModal
+        mode={activeTab}
         isOpen={isCreateModalOpen}
+        currentUser={user}
         onClose={() => setIsCreateModalOpen(false)}
         onCreate={(userData) => createMutation.mutate(userData)}
         isPending={createMutation.isPending}
@@ -476,6 +701,7 @@ export function UserManagement() {
       {editingUser && (
         <EditUserModal
           user={editingUser}
+          currentUser={user}
           onClose={() => setEditingUser(null)}
           onSave={(payload) => updateMutation.mutate({ id: editingUser.id, payload })}
           isPending={updateMutation.isPending}
@@ -487,16 +713,15 @@ export function UserManagement() {
         <ResetPasswordModal
           target={resetPasswordTarget}
           onClose={() => setResetPasswordTarget(null)}
-          onConfirm={(customPass) => resetPasswordMutation.mutate({ id: resetPasswordTarget.id, pass: customPass })}
+          onConfirm={(customPass) =>
+            resetPasswordMutation.mutate({ id: resetPasswordTarget.id, pass: customPass })
+          }
           isPending={resetPasswordMutation.isPending}
         />
       )}
 
       {/* MOH Student Roster Modal */}
-      <MOHUploadModal
-        isOpen={isMOHModalOpen}
-        onClose={() => setIsMOHModalOpen(false)}
-      />
+      <MOHUploadModal isOpen={isMOHModalOpen} onClose={() => setIsMOHModalOpen(false)} />
 
       {/* Student Official Registration Record Modal (info.txt) */}
       <StudentRegistrationModal
@@ -600,6 +825,7 @@ export function UserManagement() {
           target={assignRoleTarget}
           roles={rolesAndFunctionsData?.roles || []}
           functions={rolesAndFunctionsData?.functions || []}
+          currentUser={user}
           onClose={() => setAssignRoleTarget(null)}
           onConfirm={({ role, assigned_functions }) =>
             assignRoleMutation.mutate({

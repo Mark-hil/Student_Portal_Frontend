@@ -93,6 +93,8 @@ export interface User {
   department:     string;
   bio:            string;
   is_active?:     boolean;
+  is_staff?:      boolean;
+  is_superuser?:  boolean;
   is_deleted?:    boolean;
   deleted_at?:    string | null;
   email_verified: boolean;
@@ -209,6 +211,7 @@ export interface StudentRegistrationPayload {
 }
 
 export interface MOHUploadResult {
+  detail?:             string;
   success:             boolean;
   total_rows:          number;
   imported_count:      number;

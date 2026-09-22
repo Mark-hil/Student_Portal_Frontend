@@ -88,6 +88,7 @@ export const adminApi = {
   uploadMOHRoster: (formData: FormData) =>
     client.post<MOHUploadResult>('/users/manage/upload-moh-roster/', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 120_000,
     }),
   downloadMOHTemplate: async () => {
     const res = await client.get('/users/manage/moh-template/', {
@@ -95,7 +96,10 @@ export const adminApi = {
     });
     downloadCsvBlob(res.data, 'asdam_moh_student_roster_template.csv');
   },
-  exportStudentsCsv: async (params?: { role?: string; search?: string }, filename = 'students_directory.csv') => {
+  exportStudentsCsv: async (
+    params?: { role?: string; search?: string; user_type?: string; department?: string } | Record<string, any>,
+    filename = 'students_directory.csv'
+  ) => {
     const res = await client.get('/users/manage/export-students/', {
       params,
       responseType: 'blob',

@@ -67,7 +67,20 @@ export const MOHUploadModal: React.FC<MOHUploadModalProps> = ({
         toast.success(`Dry run complete: ${res.data.imported_count} valid records checked.`);
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to process student roster.');
+      if (err.response?.data) {
+        setMohUploadResult(err.response.data);
+      }
+      let errorMsg = 'Failed to process student roster.';
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        errorMsg = 'Upload request timed out on the client, but records may still be processing in the background. Please refresh your users list.';
+      } else if (err.response?.data?.detail) {
+        errorMsg = err.response.data.detail;
+      } else if (err.response?.data?.errors?.[0]?.error) {
+        errorMsg = err.response.data.errors[0].error;
+      } else if (err.message) {
+        errorMsg = err.message;
+      }
+      toast.error(errorMsg);
     } finally {
       setIsUploadingRoster(false);
     }
@@ -194,7 +207,7 @@ export const MOHUploadModal: React.FC<MOHUploadModalProps> = ({
               <input
                 type="file"
                 ref={fileInputRef}
-                accept=".csv,text/csv"
+                accept=".csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,.xlsx,.xls"
                 style={{ display: 'none' }}
                 onChange={e => {
                   const f = e.target.files?.[0];
@@ -229,10 +242,10 @@ export const MOHUploadModal: React.FC<MOHUploadModalProps> = ({
                   ) : (
                     <div>
                       <div style={{ fontSize: 14, fontWeight: 700, color: C.slate8 }}>
-                        Click to browse or drop student roster CSV here
+                        Click to browse or drop student roster CSV or Excel (.xlsx) here
                       </div>
                       <div style={{ fontSize: 12, color: C.slate4, marginTop: 3 }}>
-                        Accepts CSV files with UTF-8 or standard encoding
+                        Accepts CSV, TSV, or Excel (.xlsx) files with standard MOH headers
                       </div>
                     </div>
                   )}
@@ -297,38 +310,57 @@ export const MOHUploadModal: React.FC<MOHUploadModalProps> = ({
           /* Upload Results Summary View */
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {/* Result Status Banner */}
-            <div style={{
-              padding: '14px 18px',
-              borderRadius: 12,
-              background: mohUploadResult.errors.length === 0 ? '#ecfdf5' : '#fffbeb',
-              border: `1.5px solid ${mohUploadResult.errors.length === 0 ? '#86efac' : '#fde68a'}`,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-            }}>
-              {mohUploadResult.errors.length === 0 ? (
-                <CheckCircle2 size={24} color="#16a34a" className="shrink-0" />
-              ) : (
-                <AlertTriangle size={24} color="#d97706" className="shrink-0" />
-              )}
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 800, color: mohUploadResult.errors.length === 0 ? '#15803d' : '#b45309' }}>
-                  {mohUploadResult.dry_run ? 'Dry Run Validation Completed' : 'Roster Processing Complete'}
-                </div>
-                <div style={{ fontSize: 13, color: mohUploadResult.errors.length === 0 ? '#166534' : '#92400e', marginTop: 2 }}>
-                  {mohUploadResult.imported_count} student(s) successfully {mohUploadResult.dry_run ? 'validated' : 'provisioned'} with ASDAM IDs.
-                  {mohUploadResult.skipped_count > 0 && ` ${mohUploadResult.skipped_count} row(s) skipped due to validation errors.`}
-                  {!mohUploadResult.dry_run && mohUploadResult.imported_count > 0 && (
-                    <div style={{ marginTop: 6, fontWeight: 700, color: '#15803d', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5 }}>
-                      <Mail size={14} /> Automated Welcome SMS & Email credentials dispatched to {mohUploadResult.imported_count} student(s) for mandatory registration.
-                    </div>
+            {(() => {
+              const isFailed = (mohUploadResult.imported_count || 0) === 0 && !mohUploadResult.dry_run;
+              const hasErrors = (mohUploadResult.errors?.length || 0) > 0;
+              const bgColor = isFailed ? '#fef2f2' : hasErrors ? '#fffbeb' : '#ecfdf5';
+              const borderColor = isFailed ? '#fecaca' : hasErrors ? '#fde68a' : '#86efac';
+              const titleColor = isFailed ? '#991b1b' : hasErrors ? '#b45309' : '#15803d';
+              const descColor = isFailed ? '#7f1d1d' : hasErrors ? '#92400e' : '#166534';
+
+              return (
+                <div style={{
+                  padding: '14px 18px',
+                  borderRadius: 12,
+                  background: bgColor,
+                  border: `1.5px solid ${borderColor}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                }}>
+                  {isFailed ? (
+                    <AlertTriangle size={24} color="#dc2626" className="shrink-0" />
+                  ) : hasErrors ? (
+                    <AlertTriangle size={24} color="#d97706" className="shrink-0" />
+                  ) : (
+                    <CheckCircle2 size={24} color="#16a34a" className="shrink-0" />
                   )}
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: titleColor }}>
+                      {isFailed
+                        ? 'Roster Processing Failed'
+                        : mohUploadResult.dry_run
+                        ? 'Dry Run Validation Completed'
+                        : 'Roster Processing Complete'}
+                    </div>
+                    <div style={{ fontSize: 13, color: descColor, marginTop: 2 }}>
+                      {isFailed
+                        ? (mohUploadResult.detail || mohUploadResult.errors?.[0]?.error || 'Failed to process any student records from the uploaded file.')
+                        : `${mohUploadResult.imported_count} student(s) successfully ${mohUploadResult.dry_run ? 'validated' : 'provisioned'} with ASDAM IDs.`}
+                      {!isFailed && mohUploadResult.skipped_count > 0 && ` ${mohUploadResult.skipped_count} row(s) skipped due to validation errors.`}
+                      {!isFailed && !mohUploadResult.dry_run && (mohUploadResult.imported_count || 0) > 0 && (
+                        <div style={{ marginTop: 6, fontWeight: 700, color: '#15803d', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5 }}>
+                          <Mail size={14} /> Automated Welcome SMS & Email credentials dispatched to {mohUploadResult.imported_count} student(s) for mandatory registration.
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              );
+            })()}
 
             {/* Generated Student IDs Table Preview */}
-            {mohUploadResult.students.length > 0 && (
+            {(mohUploadResult.students?.length || 0) > 0 && (
               <div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: C.slate8, marginBottom: 8 }}>
                   Generated ASDAM Student IDs ({mohUploadResult.students.length}):
@@ -374,7 +406,7 @@ export const MOHUploadModal: React.FC<MOHUploadModalProps> = ({
             )}
 
             {/* Validation Errors List (if any) */}
-            {mohUploadResult.errors.length > 0 && (
+            {(mohUploadResult.errors?.length || 0) > 0 && (
               <div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: '#b91c1c', marginBottom: 6 }}>
                   Validation Issues ({mohUploadResult.errors.length}):

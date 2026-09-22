@@ -112,13 +112,14 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
   const NAV_FINANCE = [
     { id: 'dashboard', label: 'Financial Overview', Icon: LayoutDashboard },
     { id: 'bursar', label: 'Bursar & Accounts', Icon: Coins },
-    { id: 'users', label: 'Student Directory', Icon: Users },
+    { id: 'students', label: 'Student Directory', Icon: GraduationCap },
     { id: 'notifications', label: 'Notifications', Icon: Bell },
     { id: 'profile', label: 'Profile', Icon: User },
   ];
   const NAV_STAFF = [
     { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard },
-    { id: 'users', label: 'User Management', Icon: Users },
+    { id: 'students', label: 'Student Management', Icon: GraduationCap },
+    { id: 'users', label: 'Staff & Faculty', Icon: Users },
     { id: 'courses_admin', label: 'Course Management', Icon: BookOpen },
     { id: 'review', label: 'Review Queue', Icon: ClipboardCheck },
     { id: 'notifications', label: 'Notifications', Icon: Bell },
@@ -126,16 +127,18 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
   ];
   const NAV_DEPT_HEAD = [
     { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard },
+    { id: 'students', label: 'Students', Icon: GraduationCap },
     { id: 'courses_admin', label: 'Curriculum & Courses', Icon: BookOpen },
     { id: 'review', label: 'Review Queue', Icon: ClipboardCheck },
-    { id: 'users', label: 'Department Directory', Icon: Users },
+    { id: 'users', label: 'Department Staff', Icon: Users },
     { id: 'notifications', label: 'Notifications', Icon: Bell },
     { id: 'profile', label: 'Profile', Icon: User },
   ];
   const NAV_ADMIN = [
     { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard },
+    { id: 'students', label: 'Student Management', Icon: GraduationCap },
+    { id: 'users', label: 'Staff & Roles', Icon: Users },
     { id: 'bursar', label: 'Bursar & Accounts', Icon: Coins },
-    { id: 'users', label: 'User Management', Icon: Users },
     { id: 'courses_admin', label: 'Course Management', Icon: BookOpen },
     { id: 'review', label: 'Review Queue', Icon: ClipboardCheck },
     { id: 'notifications', label: 'Notifications', Icon: Bell },
@@ -160,7 +163,8 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
     courses: 'My Courses', register: 'Course Registration',
     grades: 'Grades & GPA', batches: 'Grade Batches', review: 'Review Queue',
     notifications: 'Notifications', profile: 'My Profile',
-    users: isFinance ? 'Student Directory' : 'User Management',
+    students: isDepartmentalHead ? 'Department Students' : isFinance ? 'Student Directory' : 'Student Management & Admissions',
+    users: isDepartmentalHead ? 'Department Faculty & Staff' : 'Staff & Faculty Access Control',
     courses_admin: 'Course Management',
     financials: 'Fees & Financials', bursar: 'Bursar & Accounts'
   };
@@ -180,7 +184,8 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
         if (isOfficer) return <AdminDashboard user={currentUser} />;
         return <StudentDashboard user={currentUser} onNav={setView} />;
       case 'courses_lecturer': return <LecturerCoursesView user={currentUser} />;
-      case 'users': return <UserManagement />;
+      case 'students': return <UserManagement initialMode="students" user={currentUser} />;
+      case 'users': return <UserManagement initialMode="staff" user={currentUser} />;
       case 'courses_admin': return <CourseManagement />;
       case 'bursar':
         if (isStaff) return <AdminDashboard user={currentUser} />;

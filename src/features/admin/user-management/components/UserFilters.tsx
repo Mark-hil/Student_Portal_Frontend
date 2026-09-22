@@ -2,13 +2,18 @@ import React from 'react';
 import { Search } from 'lucide-react';
 import { C } from '../../../../utils/theme';
 
-interface UserFiltersProps {
+export interface UserFiltersProps {
+  mode?: 'students' | 'staff';
   search: string;
   onSearchChange: (value: string) => void;
   roleFilter: string;
   onRoleFilterChange: (value: string) => void;
   programFilter: string;
   onProgramFilterChange: (value: string) => void;
+  departmentFilter?: string;
+  onDepartmentFilterChange?: (value: string) => void;
+  classFilter?: string;
+  onClassFilterChange?: (value: string) => void;
   registrationFilter: string;
   onRegistrationFilterChange: (value: string) => void;
   academicStatusFilter: string;
@@ -19,12 +24,17 @@ interface UserFiltersProps {
 }
 
 export const UserFilters: React.FC<UserFiltersProps> = ({
+  mode = 'students',
   search,
   onSearchChange,
   roleFilter,
   onRoleFilterChange,
   programFilter,
   onProgramFilterChange,
+  departmentFilter = '',
+  onDepartmentFilterChange = () => {},
+  classFilter = '',
+  onClassFilterChange = () => {},
   registrationFilter,
   onRegistrationFilterChange,
   academicStatusFilter,
@@ -35,12 +45,17 @@ export const UserFilters: React.FC<UserFiltersProps> = ({
 }) => {
   return (
     <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+      {/* Search Input */}
       <div style={{ position: 'relative', flex: 1, minWidth: isMobile ? '100%' : 260 }}>
         <Search size={16} color={C.slate4} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
         <input
           value={search}
           onChange={e => onSearchChange(e.target.value)}
-          placeholder="Search by name, email, student ID, or MOH PIN…"
+          placeholder={
+            mode === 'students'
+              ? 'Search by name, email, student ID, or MOH PIN…'
+              : 'Search staff by name, email, department, or role…'
+          }
           style={{
             width: '100%',
             padding: '11px 16px 11px 40px',
@@ -49,118 +64,184 @@ export const UserFilters: React.FC<UserFiltersProps> = ({
             fontSize: 14,
             outline: 'none',
             fontFamily: 'inherit',
-            boxSizing: 'border-box'
+            boxSizing: 'border-box',
           }}
         />
       </div>
 
-      <select
-        value={roleFilter}
-        onChange={e => onRoleFilterChange(e.target.value)}
+      {/* Staff Mode: Institutional Roles Filter */}
+      {mode === 'staff' && (
+        <select
+          value={roleFilter}
+          onChange={e => onRoleFilterChange(e.target.value)}
+          style={{
+            padding: '11px 16px',
+            border: `1px solid ${C.slate2}`,
+            borderRadius: 12,
+            fontSize: 14,
+            outline: 'none',
+            fontFamily: 'inherit',
+            color: C.slate7,
+            background: '#fff',
+            cursor: 'pointer',
+            width: isMobile ? '100%' : 'auto',
+          }}
+        >
+          <option value="">All Staff Roles</option>
+          <option value="lecturer">Lecturers</option>
+          <option value="head_of_department">Department Heads (HOD)</option>
+          <option value="academic_officer">Academic Officers</option>
+          <option value="finance">Finance Officers</option>
+          <option value="super_admin">Super Administrators</option>
+        </select>
+      )}
+
+      {/* Staff Mode: Department Filter */}
+      {mode === 'staff' && (
+        <select
+          value={departmentFilter}
+          onChange={e => onDepartmentFilterChange(e.target.value)}
+          style={{
+            padding: '11px 16px',
+            border: `1px solid ${C.slate2}`,
+            borderRadius: 12,
+            fontSize: 14,
+            outline: 'none',
+            fontFamily: 'inherit',
+            color: C.slate7,
+            background: '#fff',
+            cursor: 'pointer',
+            width: isMobile ? '100%' : 'auto',
+          }}
+        >
+          <option value="">All Departments</option>
+          <option value="Computer Science">Computer Science</option>
+          <option value="Nursing">Nursing</option>
+          <option value="Midwifery">Midwifery</option>
+          <option value="General Sciences">General Sciences</option>
+          <option value="Administration">Administration</option>
+        </select>
+      )}
+
+      {/* Student Mode: Program Filter */}
+      {mode === 'students' && (
+        <select
+          value={programFilter}
+          onChange={e => onProgramFilterChange(e.target.value)}
+          style={{
+            padding: '11px 16px',
+            border: `1px solid ${C.slate2}`,
+            borderRadius: 12,
+            fontSize: 14,
+            outline: 'none',
+            fontFamily: 'inherit',
+            color: C.slate7,
+            background: '#fff',
+            cursor: 'pointer',
+            width: isMobile ? '100%' : 'auto',
+          }}
+        >
+          <option value="">All Programs</option>
+          <option value="nursing">Nursing (NUR)</option>
+          <option value="midwifery">Midwifery (MID)</option>
+        </select>
+      )}
+
+      {/* Student Mode: Class Level Filter */}
+      {mode === 'students' && (
+        <select
+          value={classFilter}
+          onChange={e => onClassFilterChange(e.target.value)}
+          style={{
+            padding: '11px 16px',
+            border: `1px solid ${C.slate2}`,
+            borderRadius: 12,
+            fontSize: 14,
+            outline: 'none',
+            fontFamily: 'inherit',
+            color: C.slate7,
+            background: '#fff',
+            cursor: 'pointer',
+            width: isMobile ? '100%' : 'auto',
+          }}
+        >
+          <option value="">All Levels</option>
+          <option value="100">Level 100</option>
+          <option value="200">Level 200</option>
+          <option value="300">Level 300</option>
+        </select>
+      )}
+
+      {/* Student Mode: Registration State Filter */}
+      {mode === 'students' && (
+        <select
+          value={registrationFilter}
+          onChange={e => onRegistrationFilterChange(e.target.value)}
+          style={{
+            padding: '11px 16px',
+            border: `1px solid ${C.slate2}`,
+            borderRadius: 12,
+            fontSize: 14,
+            outline: 'none',
+            fontFamily: 'inherit',
+            color: C.slate7,
+            background: '#fff',
+            cursor: 'pointer',
+            width: isMobile ? '100%' : 'auto',
+          }}
+        >
+          <option value="">All Registration States</option>
+          <option value="true">Registered / Active</option>
+          <option value="false">Pending Onboarding</option>
+        </select>
+      )}
+
+      {/* Student Mode: Academic Status Filter */}
+      {mode === 'students' && (
+        <select
+          value={academicStatusFilter}
+          onChange={e => onAcademicStatusFilterChange(e.target.value)}
+          style={{
+            padding: '11px 16px',
+            border: `1px solid ${C.slate2}`,
+            borderRadius: 12,
+            fontSize: 14,
+            outline: 'none',
+            fontFamily: 'inherit',
+            color: C.slate7,
+            background: '#fff',
+            cursor: 'pointer',
+            width: isMobile ? '100%' : 'auto',
+          }}
+        >
+          <option value="">All Academic Standings</option>
+          <option value="active">Active (Good Standing)</option>
+          <option value="probation">Academic Probation</option>
+          <option value="repeating">Repeating / Retained</option>
+          <option value="withdrawn">Withdrawn</option>
+          <option value="graduated">Graduated (Alumni)</option>
+          <option value="suspended">Suspended</option>
+          <option value="deleted">Archived Records</option>
+        </select>
+      )}
+
+      {/* Include Archived Checkbox */}
+      <label
         style={{
-          padding: '11px 16px',
-          border: `1px solid ${C.slate2}`,
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '10px 14px',
+          background: includeDeleted ? '#f1f5f9' : '#fff',
+          border: `1px solid ${includeDeleted ? C.slate4 : C.slate2}`,
           borderRadius: 12,
-          fontSize: 14,
-          outline: 'none',
-          fontFamily: 'inherit',
+          fontSize: 13.5,
+          fontWeight: 600,
           color: C.slate7,
-          background: '#fff',
           cursor: 'pointer',
-          width: isMobile ? '100%' : 'auto'
+          userSelect: 'none',
         }}
       >
-        <option value="">All Portal Roles</option>
-        <option value="student">Students</option>
-        <option value="lecturer">Lecturers</option>
-        <option value="departmental-head">Department Heads</option>
-        <option value="academic-officer">Academic Officers</option>
-        <option value="finance-officer">Finance Officers</option>
-        <option value="super-admin">Super Administrators</option>
-      </select>
-
-      <select
-        value={programFilter}
-        onChange={e => onProgramFilterChange(e.target.value)}
-        style={{
-          padding: '11px 16px',
-          border: `1px solid ${C.slate2}`,
-          borderRadius: 12,
-          fontSize: 14,
-          outline: 'none',
-          fontFamily: 'inherit',
-          color: C.slate7,
-          background: '#fff',
-          cursor: 'pointer',
-          width: isMobile ? '100%' : 'auto'
-        }}
-      >
-        <option value="">All Programs</option>
-        <option value="nursing">Nursing (NUR)</option>
-        <option value="midwifery">Midwifery (MID)</option>
-      </select>
-
-      <select
-        value={registrationFilter}
-        onChange={e => onRegistrationFilterChange(e.target.value)}
-        style={{
-          padding: '11px 16px',
-          border: `1px solid ${C.slate2}`,
-          borderRadius: 12,
-          fontSize: 14,
-          outline: 'none',
-          fontFamily: 'inherit',
-          color: C.slate7,
-          background: '#fff',
-          cursor: 'pointer',
-          width: isMobile ? '100%' : 'auto'
-        }}
-      >
-        <option value="">All Activation States</option>
-        <option value="true">Registered / Activated</option>
-        <option value="false">Pending Activation</option>
-      </select>
-
-      <select
-        value={academicStatusFilter}
-        onChange={e => onAcademicStatusFilterChange(e.target.value)}
-        style={{
-          padding: '11px 16px',
-          border: `1px solid ${C.slate2}`,
-          borderRadius: 12,
-          fontSize: 14,
-          outline: 'none',
-          fontFamily: 'inherit',
-          color: C.slate7,
-          background: '#fff',
-          cursor: 'pointer',
-          width: isMobile ? '100%' : 'auto'
-        }}
-      >
-        <option value="">All Academic Statuses</option>
-        <option value="active">Active (Good Standing)</option>
-        <option value="probation">Academic Probation</option>
-        <option value="repeating">Repeating / Retained</option>
-        <option value="withdrawn">Withdrawn</option>
-        <option value="graduated">Graduated (Alumni)</option>
-        <option value="suspended">Suspended</option>
-        <option value="deleted">Archived / Deleted</option>
-      </select>
-
-      <label style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 8,
-        padding: '10px 14px',
-        background: includeDeleted ? '#f1f5f9' : '#fff',
-        border: `1px solid ${includeDeleted ? C.slate4 : C.slate2}`,
-        borderRadius: 12,
-        fontSize: 13.5,
-        fontWeight: 600,
-        color: C.slate7,
-        cursor: 'pointer',
-        userSelect: 'none'
-      }}>
         <input
           type="checkbox"
           checked={includeDeleted}

@@ -8,6 +8,7 @@ import type { User } from '../../../../types';
 
 interface EditUserModalProps {
   user: User;
+  currentUser?: User;
   onClose: () => void;
   onSave: (payload: {
     first_name: string;
@@ -20,12 +21,25 @@ interface EditUserModalProps {
 
 export const EditUserModal: React.FC<EditUserModalProps> = ({
   user,
+  currentUser,
   onClose,
   onSave,
   isPending,
 }) => {
   const qc = useQueryClient();
   const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  const isActorSuperAdmin =
+    currentUser?.role === 'super_admin' ||
+    currentUser?.role === 'super-admin' ||
+    currentUser?.role === 'admin' ||
+    (currentUser as any)?.is_superuser;
+
+  const isTargetSuperAdmin =
+    user.role === 'super_admin' ||
+    user.role === 'super-admin' ||
+    user.role === 'admin' ||
+    (user as any)?.is_superuser;
 
   const [firstName, setFirstName] = useState(user.first_name || '');
   const [lastName, setLastName] = useState(user.last_name || '');
@@ -143,18 +157,31 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: C.slate7, marginBottom: 4 }}>Role</label>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: C.slate7, marginBottom: 4 }}>
+              Role {isTargetSuperAdmin && !isActorSuperAdmin && '(Restricted to Super Admin)'}
+            </label>
             <select
               value={role}
+              disabled={isTargetSuperAdmin && !isActorSuperAdmin}
               onChange={e => setRole(e.target.value as any)}
-              style={{ width: '100%', padding: '9px 12px', border: `1px solid ${C.slate2}`, borderRadius: 8, fontSize: 13, background: '#fff' }}
+              style={{
+                width: '100%',
+                padding: '9px 12px',
+                border: `1px solid ${C.slate2}`,
+                borderRadius: 8,
+                fontSize: 13,
+                background: isTargetSuperAdmin && !isActorSuperAdmin ? '#f1f5f9' : '#fff',
+                cursor: isTargetSuperAdmin && !isActorSuperAdmin ? 'not-allowed' : 'default',
+              }}
             >
               <option value="student">Student</option>
               <option value="lecturer">Lecturer / Instructor</option>
               <option value="departmental-head">Departmental Head</option>
               <option value="academic-officer">Academic Officer</option>
               <option value="finance-officer">Finance Officer</option>
-              <option value="super-admin">Super Administrator</option>
+              {isActorSuperAdmin && (
+                <option value="super-admin">Super Administrator</option>
+              )}
               {/* Legacy fallback options */}
               {['admin', 'staff', 'instructor', 'finance'].includes(role) && (
                 <option value={role} disabled>Legacy: {role}</option>

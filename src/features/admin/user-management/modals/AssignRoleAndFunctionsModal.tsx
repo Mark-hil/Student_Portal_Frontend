@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   ShieldCheck, Check, RotateCcw, Loader2, Sparkles,
   Layers, Users, Award, BookOpen, Building2,
-  DollarSign, Key, CheckSquare, Square
+  DollarSign, Key, CheckSquare, Square, Lock
 } from 'lucide-react';
 import { C } from '../../../../utils/theme';
 import type { User, PortalRoleInfo, PortalFunction, Role } from '../../../../types';
@@ -11,6 +11,7 @@ interface AssignRoleAndFunctionsModalProps {
   target: User;
   roles: PortalRoleInfo[];
   functions: PortalFunction[];
+  currentUser?: User;
   onClose: () => void;
   onConfirm: (data: { role: Role; assigned_functions: string[] }) => void;
   isPending: boolean;
@@ -30,10 +31,33 @@ export const AssignRoleAndFunctionsModal: React.FC<AssignRoleAndFunctionsModalPr
   target,
   roles,
   functions,
+  currentUser,
   onClose,
   onConfirm,
   isPending,
 }) => {
+  const isActorSuperAdmin =
+    currentUser?.role === 'super_admin' ||
+    currentUser?.role === 'super-admin' ||
+    currentUser?.role === 'admin' ||
+    (currentUser as any)?.is_superuser;
+
+  const isTargetSuperAdmin =
+    target.role === 'super_admin' ||
+    target.role === 'super-admin' ||
+    target.role === 'admin' ||
+    (target as any)?.is_superuser;
+
+  // Filter roles: omit super_admin if actor is not super admin
+  const filteredRoles = useMemo(() => {
+    if (!isActorSuperAdmin) {
+      return roles.filter(
+        r => r.code !== 'super_admin' && r.code !== 'super-admin' && r.code !== 'admin'
+      );
+    }
+    return roles;
+  }, [roles, isActorSuperAdmin]);
+
   // Normalize target role to canonical or fallback
   const initialRole = (target.role || 'student') as Role;
   const [selectedRole, setSelectedRole] = useState<Role>(initialRole);
@@ -116,6 +140,7 @@ export const AssignRoleAndFunctionsModal: React.FC<AssignRoleAndFunctionsModalPr
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isTargetSuperAdmin && !isActorSuperAdmin) return;
     onConfirm({
       role: selectedRole,
       assigned_functions: Array.from(selectedFunctions),
@@ -197,6 +222,24 @@ export const AssignRoleAndFunctionsModal: React.FC<AssignRoleAndFunctionsModalPr
         {/* Modal Body */}
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
           <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
+            {isTargetSuperAdmin && !isActorSuperAdmin && (
+              <div style={{
+                marginBottom: 20,
+                padding: '12px 16px',
+                borderRadius: 12,
+                background: '#fef2f2',
+                border: '1px solid #fecaca',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                color: '#991b1b',
+              }}>
+                <Lock size={20} />
+                <div style={{ fontSize: 13, fontWeight: 600 }}>
+                  Security Protection: Super Administrator accounts and permissions can only be modified by fellow Super Administrators.
+                </div>
+              </div>
+            )}
             
             {/* Step 1: Institutional Role Selection */}
             <div style={{ marginBottom: 24 }}>
@@ -214,18 +257,21 @@ export const AssignRoleAndFunctionsModal: React.FC<AssignRoleAndFunctionsModalPr
                 gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
                 gap: 10,
               }}>
-                {roles.map(role => {
+                {filteredRoles.map(role => {
                   const isSelected = selectedRole === role.code;
                   return (
                     <div
                       key={role.code}
-                      onClick={() => handleRoleChange(role.code as Role)}
+                      onClick={() => {
+                        if (isTargetSuperAdmin && !isActorSuperAdmin) return;
+                        handleRoleChange(role.code as Role);
+                      }}
                       style={{
                         padding: '12px 14px',
                         borderRadius: 12,
                         border: isSelected ? `2px solid ${C.indigo}` : `1px solid ${C.slate2}`,
                         background: isSelected ? '#f5f7ff' : '#fff',
-                        cursor: 'pointer',
+                        cursor: (isTargetSuperAdmin && !isActorSuperAdmin) ? 'not-allowed' : 'pointer',
                         transition: 'all 0.15s ease',
                         position: 'relative',
                       }}
@@ -556,7 +602,7 @@ export const AssignRoleAndFunctionsModal: React.FC<AssignRoleAndFunctionsModalPr
               </button>
               <button
                 type="submit"
-                disabled={isPending}
+                disabled={isPending || (isTargetSuperAdmin && !isActorSuperAdmin)}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -564,12 +610,12 @@ export const AssignRoleAndFunctionsModal: React.FC<AssignRoleAndFunctionsModalPr
                   padding: '9px 20px',
                   borderRadius: 10,
                   border: 'none',
-                  background: `linear-gradient(135deg, ${C.indigo} 0%, #3730a3 100%)`,
+                  background: (isTargetSuperAdmin && !isActorSuperAdmin) ? '#94a3b8' : `linear-gradient(135deg, ${C.indigo} 0%, #3730a3 100%)`,
                   color: '#fff',
                   fontSize: 13,
                   fontWeight: 700,
-                  cursor: isPending ? 'not-allowed' : 'pointer',
-                  boxShadow: '0 2px 8px rgba(79, 70, 229, 0.3)',
+                  cursor: (isPending || (isTargetSuperAdmin && !isActorSuperAdmin)) ? 'not-allowed' : 'pointer',
+                  boxShadow: (isTargetSuperAdmin && !isActorSuperAdmin) ? 'none' : '0 2px 8px rgba(79, 70, 229, 0.3)',
                 }}
               >
                 {isPending ? (
