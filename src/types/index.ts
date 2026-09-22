@@ -6,16 +6,22 @@
 // ── Auth / User ───────────────────────────────────────────────────────────────
 export type Role =
   | 'super-admin'
+  | 'super_admin'
   | 'academic-officer'
+  | 'academic_officer'
+  | 'head-of-department'
+  | 'head_of_department'
   | 'departmental-head'
-  | 'lecturer'
+  | 'hod'
+  | 'finance'
   | 'finance-officer'
+  | 'finance_officer'
+  | 'lecturer'
   | 'student'
   // Legacy / alternate aliases
   | 'admin'
   | 'staff'
-  | 'instructor'
-  | 'finance';
+  | 'instructor';
 
 export type AcademicStatus = 'active' | 'probation' | 'repeating' | 'withdrawn' | 'suspended' | 'graduated' | 'deleted';
 

@@ -82,11 +82,11 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
   });
   const unread = (notifData?.results ?? []).filter((n: any) => !n.read).length;
 
-  const isSuperAdmin = currentUser.role === 'super-admin' || currentUser.role === 'admin';
-  const isAcademicOfficer = currentUser.role === 'academic-officer' || currentUser.role === 'staff';
-  const isDepartmentalHead = currentUser.role === 'departmental-head';
+  const isSuperAdmin = currentUser.role === 'super-admin' || currentUser.role === 'super_admin' || currentUser.role === 'admin';
+  const isAcademicOfficer = currentUser.role === 'academic-officer' || currentUser.role === 'academic_officer' || currentUser.role === 'staff';
+  const isDepartmentalHead = currentUser.role === 'departmental-head' || currentUser.role === 'head_of_department' || currentUser.role === 'head-of-department' || currentUser.role === 'hod';
   const isLecturer = currentUser.role === 'lecturer' || currentUser.role === 'instructor';
-  const isFinance = currentUser.role === 'finance-officer' || currentUser.role === 'finance';
+  const isFinance = currentUser.role === 'finance-officer' || currentUser.role === 'finance_officer' || currentUser.role === 'finance';
   const isStudent = currentUser.role === 'student' || (!isSuperAdmin && !isAcademicOfficer && !isDepartmentalHead && !isLecturer && !isFinance);
 
   const isAdmin = isSuperAdmin;

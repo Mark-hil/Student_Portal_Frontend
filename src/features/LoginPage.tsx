@@ -8,7 +8,8 @@ import React, { useState, FormEvent } from 'react';
 import {
   GraduationCap, Mail, Lock, User, Eye, EyeOff, AlertCircle,
   ShieldCheck, Calendar, Award, Clock, ArrowRight,
-  BookOpen, Shield, Coins, KeyRound, CheckCircle2, HeartPulse, Sparkles, Phone
+  BookOpen, Shield, Coins, KeyRound, CheckCircle2, HeartPulse, Sparkles, Phone,
+  Building2
 } from 'lucide-react';
 import client from '../api/client';
 import { authApi } from '../api/services';
@@ -38,8 +39,26 @@ const DEMO_ACCOUNTS = [
     border: '#ddd6fe',
   },
   {
+    role: 'Head of Department',
+    label: 'Departmental Directorate',
+    email: 'hod@uniportal.edu',
+    icon: Building2,
+    color: '#0284c7',
+    bg: '#f0f9ff',
+    border: '#bae6fd',
+  },
+  {
+    role: 'Academic Officer',
+    label: 'Admissions & Registrar',
+    email: 'academic@uniportal.edu',
+    icon: Calendar,
+    color: 'var(--rose-500)',
+    bg: 'var(--rose-50)',
+    border: '#fbcfe8',
+  },
+  {
     role: 'Finance Officer',
-    label: 'Finance Directorate',
+    label: 'Finance & Treasury',
     email: 'finance@uniportal.edu',
     icon: Coins,
     color: '#d97706',
@@ -47,17 +66,8 @@ const DEMO_ACCOUNTS = [
     border: '#fde68a',
   },
   {
-    role: 'Staff Officer',
-    label: 'Academic Staff',
-    email: 'staff@uniportal.edu',
-    icon: Calendar,
-    color: 'var(--rose-500)',
-    bg: 'var(--rose-50)',
-    border: '#fbcfe8',
-  },
-  {
-    role: 'Admin',
-    label: 'System Admin',
+    role: 'Super Admin',
+    label: 'System Administration',
     email: 'admin@uniportal.edu',
     icon: Shield,
     color: 'var(--primary-600)',
