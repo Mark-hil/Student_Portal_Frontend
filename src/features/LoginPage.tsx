@@ -88,6 +88,7 @@ export default function LoginPage({ onSuccess }: Props) {
   const [form, setForm] = useState({
     email: 'student@uniportal.edu',
     password: 'password123',
+    confirm_password: 'password123',
     first_name: '',
     last_name: '',
     role: 'student',
@@ -98,6 +99,7 @@ export default function LoginPage({ onSuccess }: Props) {
     moh_pin: '',
     serial_number: '',
     password: '',
+    confirm_password: '',
     email: '',
     phone: '',
   });
@@ -168,10 +170,21 @@ export default function LoginPage({ onSuccess }: Props) {
           setLoading(false);
           return;
         }
+        if (!mohForm.confirm_password) {
+          setError('Please confirm your password before continuing.');
+          setLoading(false);
+          return;
+        }
+        if (mohForm.password !== mohForm.confirm_password) {
+          setError('Passwords do not match. Please ensure both passwords match.');
+          setLoading(false);
+          return;
+        }
         const res = await authApi.registerMOH({
           moh_pin: mohForm.moh_pin.trim(),
           serial_number: mohForm.serial_number.trim(),
           password: mohForm.password,
+          confirm_password: mohForm.confirm_password,
           email: mohForm.email.trim() || undefined,
           phone: mohForm.phone.trim() || undefined,
         });
@@ -180,6 +193,21 @@ export default function LoginPage({ onSuccess }: Props) {
         localStorage.setItem('refresh_token', tokens.refresh);
         onSuccess(user, tokens);
       } else {
+        if (!form.password || form.password.length < 8) {
+          setError('Password must be at least 8 characters long.');
+          setLoading(false);
+          return;
+        }
+        if (!form.confirm_password) {
+          setError('Please confirm your password before continuing.');
+          setLoading(false);
+          return;
+        }
+        if (form.password !== form.confirm_password) {
+          setError('Passwords do not match. Please ensure both passwords match.');
+          setLoading(false);
+          return;
+        }
         const res = await client.post('/auth/register/', {
           email: form.email,
           password: form.password,
@@ -675,7 +703,49 @@ export default function LoginPage({ onSuccess }: Props) {
                     </div>
                   </div>
 
-                  <button type="submit" disabled={loading} className="btn btn-primary" style={{ marginTop: 4, background: 'linear-gradient(135deg, #059669, #10b981)', borderColor: '#059669' }}>
+                  <div className="form-group">
+                    <label className="form-label">Confirm Portal Password</label>
+                    <div className="input-wrap">
+                      <Lock size={15} className="input-icon" />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        className="form-input has-icon"
+                        value={mohForm.confirm_password}
+                        onChange={setMoh('confirm_password')}
+                        required
+                        minLength={8}
+                        placeholder="Re-enter your password"
+                      />
+                    </div>
+                    {mohForm.password && mohForm.confirm_password && (
+                      <div style={{
+                        fontSize: '0.75rem',
+                        marginTop: 4,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        color: mohForm.password === mohForm.confirm_password ? '#16a34a' : '#dc2626',
+                        fontWeight: 600,
+                      }}>
+                        {mohForm.password === mohForm.confirm_password ? (
+                          <>
+                            <CheckCircle2 size={13} color="#16a34a" /> Passwords match
+                          </>
+                        ) : (
+                          <>
+                            <AlertCircle size={13} color="#dc2626" /> Passwords do not match
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading || (Boolean(mohForm.password) && (!mohForm.confirm_password || mohForm.password !== mohForm.confirm_password))}
+                    className="btn btn-primary"
+                    style={{ marginTop: 4, background: 'linear-gradient(135deg, #059669, #10b981)', borderColor: '#059669' }}
+                  >
                     {loading ? 'Activating Account…' : (
                       <>
                         Activate Portal & Sign In <ArrowRight size={15} />
@@ -766,6 +836,43 @@ export default function LoginPage({ onSuccess }: Props) {
                     {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
                 </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Confirm Password</label>
+                <div className="input-wrap">
+                  <Lock size={15} className="input-icon" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    className="form-input has-icon"
+                    value={form.confirm_password}
+                    onChange={set('confirm_password')}
+                    required
+                    minLength={8}
+                    placeholder="Re-enter your password"
+                  />
+                </div>
+                {form.password && form.confirm_password && (
+                  <div style={{
+                    fontSize: '0.75rem',
+                    marginTop: 4,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    color: form.password === form.confirm_password ? '#16a34a' : '#dc2626',
+                    fontWeight: 600,
+                  }}>
+                    {form.password === form.confirm_password ? (
+                      <>
+                        <CheckCircle2 size={13} color="#16a34a" /> Passwords match
+                      </>
+                    ) : (
+                      <>
+                        <AlertCircle size={13} color="#dc2626" /> Passwords do not match
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="form-group">

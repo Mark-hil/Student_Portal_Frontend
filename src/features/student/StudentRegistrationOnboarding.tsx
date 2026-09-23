@@ -130,20 +130,38 @@ export function StudentRegistrationOnboarding({ user, onComplete, onLogout }: Pr
     e.preventDefault();
     setError('');
 
-    if (formData.new_password) {
-      if (formData.new_password.length < 8) {
-        setError('New permanent password must be at least 8 characters.');
+    // If not on final step, do not submit! Advance step instead
+    if (step < 4) {
+      handleNext();
+      return;
+    }
+
+    if (!validateStep1() || !validateStep2() || !validateStep3()) {
+      return;
+    }
+
+    if (formData.new_password || confirmPassword) {
+      if (!formData.new_password || formData.new_password.length < 8) {
+        setError('New permanent password must be at least 8 characters long.');
+        return;
+      }
+      if (!confirmPassword) {
+        setError('Please confirm your new permanent password before completing registration.');
         return;
       }
       if (formData.new_password !== confirmPassword) {
-        setError('Passwords do not match. Please confirm your password.');
+        setError('Passwords do not match. Please ensure both passwords match.');
         return;
       }
     }
 
     setLoading(true);
     try {
-      const res = await authApi.completeRegistration(formData);
+      const payload: StudentRegistrationPayload = {
+        ...formData,
+        confirm_password: confirmPassword || undefined,
+      };
+      const res = await authApi.completeRegistration(payload);
       const updatedUser = res.data.user;
       
       // Update access and refresh tokens if provided
@@ -493,7 +511,20 @@ export function StudentRegistrationOnboarding({ user, onComplete, onLogout }: Pr
         )}
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit}>
+        <form
+          onSubmit={handleSubmit}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              if (step < 4) {
+                e.preventDefault();
+                handleNext();
+              } else if (Boolean(formData.new_password) && (!confirmPassword || formData.new_password !== confirmPassword)) {
+                e.preventDefault();
+                setError('Please confirm your new permanent password before completing registration.');
+              }
+            }
+          }}
+        >
           {/* STEP 1: PERSONAL DETAILS */}
           {step === 1 && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
@@ -844,6 +875,51 @@ export function StudentRegistrationOnboarding({ user, onComplete, onLogout }: Pr
                     />
                   </div>
                 </div>
+
+                {Boolean(formData.new_password || confirmPassword) && (
+                  <div style={{
+                    marginTop: 14,
+                    padding: '8px 12px',
+                    borderRadius: 8,
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    background: !confirmPassword
+                      ? 'rgba(245, 158, 11, 0.12)'
+                      : formData.new_password === confirmPassword
+                      ? 'rgba(16, 185, 129, 0.12)'
+                      : 'rgba(239, 68, 68, 0.12)',
+                    border: !confirmPassword
+                      ? '1px solid rgba(245, 158, 11, 0.3)'
+                      : formData.new_password === confirmPassword
+                      ? '1px solid rgba(16, 185, 129, 0.3)'
+                      : '1px solid rgba(239, 68, 68, 0.3)',
+                    color: !confirmPassword
+                      ? '#fbbf24'
+                      : formData.new_password === confirmPassword
+                      ? '#34d399'
+                      : '#f87171'
+                  }}>
+                    {!confirmPassword ? (
+                      <>
+                        <AlertCircle size={14} color="#fbbf24" />
+                        Please enter your password in the confirm field to verify.
+                      </>
+                    ) : formData.new_password === confirmPassword ? (
+                      <>
+                        <CheckCircle2 size={14} color="#34d399" />
+                        Passwords match! Your new permanent password is confirmed.
+                      </>
+                    ) : (
+                      <>
+                        <AlertCircle size={14} color="#f87171" />
+                        Passwords do not match. Please ensure both fields are identical.
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -905,7 +981,7 @@ export function StudentRegistrationOnboarding({ user, onComplete, onLogout }: Pr
             ) : (
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || (Boolean(formData.new_password) && (!confirmPassword || formData.new_password !== confirmPassword))}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -917,8 +993,8 @@ export function StudentRegistrationOnboarding({ user, onComplete, onLogout }: Pr
                   color: '#ffffff',
                   fontSize: 14.5,
                   fontWeight: 800,
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                  opacity: loading ? 0.7 : 1,
+                  cursor: (loading || (Boolean(formData.new_password) && (!confirmPassword || formData.new_password !== confirmPassword))) ? 'not-allowed' : 'pointer',
+                  opacity: (loading || (Boolean(formData.new_password) && (!confirmPassword || formData.new_password !== confirmPassword))) ? 0.6 : 1,
                   boxShadow: '0 4px 18px rgba(16, 185, 129, 0.45)',
                 }}
               >

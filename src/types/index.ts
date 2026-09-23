@@ -208,6 +208,7 @@ export interface StudentRegistrationPayload {
   guardian_phone:         string;
   guardian_relationship?: string;
   new_password?:          string;
+  confirm_password?:      string;
 }
 
 export interface MOHUploadResult {
@@ -638,4 +639,101 @@ export interface BursarOverview {
   fee_structures?:      SemesterFeeStructure[];
   recent_payments:      PaymentRecord[];
   pending_bank_slips:   PaymentRecord[];
+}
+
+// ── Security & System Audit Logs ──────────────────────────────────────────────
+export type AuditLogCategory =
+  | 'auth'
+  | 'user_management'
+  | 'academics'
+  | 'financials'
+  | 'security'
+  | 'system';
+
+export type AuditLogStatus = 'SUCCESS' | 'FAILURE' | 'WARNING';
+
+export interface AuditLogActor {
+  id: string;
+  email: string;
+  full_name: string;
+  role: string;
+  avatar: string | null;
+}
+
+export interface AuditLogEntry {
+  id: number;
+  timestamp: string;
+  action: string;
+  action_category: AuditLogCategory;
+  category_display: string;
+  status: AuditLogStatus;
+  status_display: string;
+  actor: AuditLogActor | null;
+  actor_email: string;
+  actor_role: string;
+  ip_address: string;
+  user_agent: string;
+  target_type: string;
+  target_id: string;
+  target_repr: string;
+  description: string;
+  changes: {
+    before?: Record<string, any>;
+    after?: Record<string, any>;
+    [key: string]: any;
+  };
+  metadata: Record<string, any>;
+}
+
+export interface AuditLogStats {
+  total_events: number;
+  failed_logins_24h: number;
+  admin_changes_7d: number;
+  security_alerts_7d: number;
+  recent_activity: AuditLogEntry[];
+}
+
+// ── SMS Logs & Telecom Tracker ────────────────────────────────────────────────
+export type SMSDeliveryStatus =
+  | 'PENDING'
+  | 'SUBMITTED'
+  | 'DELIVERED'
+  | 'PENDING_APPROVAL'
+  | 'FAILED'
+  | 'REJECTED'
+  | 'SIMULATED';
+
+export interface SMSLogEntry {
+  id: number;
+  recipient_phone: string;
+  recipient_name: string;
+  user_id: string | null;
+  user_email: string | null;
+  user_full_name: string | null;
+  message_body: string;
+  sender_id: string;
+  purpose: string;
+  provider: string;
+  provider_message_id: string | null;
+  status: SMSDeliveryStatus;
+  status_display: string;
+  status_code: string | null;
+  gateway_response: Record<string, any>;
+  error_detail: string;
+  retry_count: number;
+  sent_at: string | null;
+  delivered_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SMSLogStats {
+  total: number;
+  delivered: number;
+  submitted: number;
+  pending_approval: number;
+  failed: number;
+  simulated: number;
+  delivery_rate_percent: number;
+  recent: SMSLogEntry[];
 }

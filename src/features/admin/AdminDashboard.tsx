@@ -1,18 +1,30 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Users, BookOpen, ClipboardCheck, ShieldCheck, Activity, ArrowRight, UserPlus, PlusCircle, FileSpreadsheet } from 'lucide-react';
+import {
+  Users, BookOpen, ClipboardCheck, ShieldCheck, Activity, ArrowRight,
+  ShieldAlert, CheckCircle2, XCircle, AlertTriangle, Clock, Lock
+} from 'lucide-react';
 import { C } from '../../utils/theme';
-import { adminApi } from '../../api/services';
-import type { User as UserType } from '../../types';
+import { adminApi, auditApi } from '../../api/services';
+import type { User as UserType, AuditLogStatus } from '../../types';
 import { Card } from '../../components/ui/Card';
 import { GradeBatchList } from '../shared/GradeBatchList';
 import { Spinner } from '../../components/ui/Spinner';
 
-export function AdminDashboard({ user }: { user: UserType }) {
+export function AdminDashboard({ user, onNav }: { user: UserType; onNav?: (view: string) => void }) {
+  const isSuperAdmin = user.role === 'super-admin' || user.role === 'super_admin' || user.role === 'admin';
+
   const { data: stats, isLoading } = useQuery({
     queryKey: ['admin', 'stats'],
     queryFn: () => adminApi.stats().then(r => r.data),
     staleTime: 30_000,
+  });
+
+  const { data: auditStats } = useQuery({
+    queryKey: ['audit-logs', 'dashboard-stats'],
+    queryFn: () => auditApi.stats().then(r => r.data),
+    staleTime: 20_000,
+    enabled: isSuperAdmin,
   });
 
   return (
@@ -63,6 +75,14 @@ export function AdminDashboard({ user }: { user: UserType }) {
               <span style={{ fontSize: 12, color: '#4ade80', display: 'flex', alignItems: 'center', gap: 4 }}>
                 <Activity size={13} /> System Operational
               </span>
+              {isSuperAdmin && (
+                <>
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>•</span>
+                  <span style={{ fontSize: 11.5, color: '#a5b4fc', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <ShieldCheck size={13} /> Super-Admin Auditing Active
+                  </span>
+                </>
+              )}
             </div>
             <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, letterSpacing: '-0.03em', color: '#f8fafc' }}>
               Academic Management, {user.first_name}
@@ -111,6 +131,97 @@ export function AdminDashboard({ user }: { user: UserType }) {
         </div>
       )}
 
+      {/* ── Security & Audit Activity Feed (Super-Admin) ────── */}
+      {isSuperAdmin && auditStats && (
+        <Card style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ background: '#eef2ff', borderRadius: 10, padding: 8, border: '1px solid #c7d2fe' }}>
+                <ShieldCheck size={18} color="#4f46e5" />
+              </div>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: C.slate9 }}>
+                  Recent Security & System Activity
+                </div>
+                <div style={{ fontSize: 12, color: C.slate5 }}>
+                  Real-time audit log of logins, administrative modifications, and security guards.
+                </div>
+              </div>
+            </div>
+
+            {onNav && (
+              <button
+                onClick={() => onNav('audit_logs')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#4f46e5',
+                  fontSize: 12.5,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4
+                }}
+              >
+                View Full Audit Trail <ArrowRight size={14} />
+              </button>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {(!auditStats.recent_activity || auditStats.recent_activity.length === 0) ? (
+              <div style={{ fontSize: 12.5, color: C.slate4, padding: '12px 0' }}>
+                No recent security activity logged.
+              </div>
+            ) : (
+              auditStats.recent_activity.slice(0, 5).map((log) => {
+                const isFail = log.status === 'FAILURE';
+                const isWarn = log.status === 'WARNING';
+                return (
+                  <div
+                    key={log.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '10px 14px',
+                      background: '#f8fafc',
+                      borderRadius: 8,
+                      border: '1px solid #f1f5f9',
+                      fontSize: 12.5,
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      {isFail ? (
+                        <XCircle size={15} color="#e11d48" />
+                      ) : isWarn ? (
+                        <AlertTriangle size={15} color="#d97706" />
+                      ) : (
+                        <CheckCircle2 size={15} color="#059669" />
+                      )}
+                      <div>
+                        <span style={{ fontWeight: 700, color: C.slate8 }}>{log.action}</span>
+                        <span style={{ color: C.slate5, margin: '0 6px' }}>—</span>
+                        <span style={{ color: C.slate6 }}>{log.description}</span>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14, color: C.slate4, fontSize: 11.5 }}>
+                      <span>{log.actor_email}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                        <Clock size={11} />
+                        {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </Card>
+      )}
+
       {/* ── Grade Batch Review Queue ───────────────────────── */}
       <div style={{ marginTop: 4 }}>
         <GradeBatchList role="officer" />
@@ -118,3 +229,4 @@ export function AdminDashboard({ user }: { user: UserType }) {
     </div>
   );
 }
+

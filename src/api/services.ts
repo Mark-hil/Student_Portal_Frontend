@@ -15,6 +15,8 @@ import type {
   AcademicProgressionLog, PromoteStudentPayload, DemoteStudentPayload,
   WithdrawStudentPayload, ReinstateStudentPayload, BulkPromotePayload, DeletionPrecheckResult,
   PortalRoleInfo, PortalFunction,
+  AuditLogEntry, AuditLogStats,
+  SMSLogEntry, SMSLogStats,
 } from '../types';
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -23,7 +25,7 @@ export const authApi = {
     client.post<LoginResponse>('/auth/login/', { email: identifier, username: identifier, password }),
   verifyMOH:   (data: { moh_pin: string; serial_number: string }) =>
     client.post<MOHVerificationResult>('/auth/verify-moh/', data),
-  registerMOH: (data: { moh_pin: string; serial_number: string; password: string; email?: string; phone?: string }) =>
+  registerMOH: (data: { moh_pin: string; serial_number: string; password: string; confirm_password?: string; email?: string; phone?: string }) =>
     client.post<LoginResponse>('/auth/register-moh/', data),
   completeRegistration: (data: StudentRegistrationPayload) =>
     client.post<{ status: string; message: string; user: User; tokens: { access: string; refresh: string } }>(
@@ -439,3 +441,71 @@ export const financialsApi = {
     downloadCsvBlob(res.data, filename);
   },
 };
+
+// ── Audit Logs (Super-Admin & Auditor) ─────────────────────────────────────────
+export const auditApi = {
+  list: (params?: {
+    page?: number;
+    page_size?: number;
+    category?: string;
+    action?: string;
+    status?: string;
+    actor?: string;
+    search?: string;
+    start_date?: string;
+    end_date?: string;
+  }) => client.get<PaginatedResponse<AuditLogEntry>>('/users/audit-logs/', { params }),
+
+  stats: () => client.get<AuditLogStats>('/users/audit-logs/stats/'),
+
+  exportCsv: async (params?: Record<string, any>, filename = 'security_audit_log.csv') => {
+    const res = await client.get('/users/audit-logs/export-csv/', {
+      params,
+      responseType: 'blob',
+    });
+    downloadCsvBlob(res.data, filename);
+  },
+};
+
+// ── SMS Telecom & Gateway Logging (Super-Admin & Auditor) ──────────────────────
+export const smsApi = {
+  list: (params?: {
+    page?: number;
+    page_size?: number;
+    status?: string;
+    search?: string;
+    purpose?: string;
+    sender_id?: string;
+    start_date?: string;
+    end_date?: string;
+  }) => client.get<PaginatedResponse<SMSLogEntry>>('/notifications/sms/', { params }),
+
+  stats: () => client.get<SMSLogStats>('/notifications/sms/stats/'),
+
+  checkStatus: (id: number) =>
+    client.post<{
+      success: boolean;
+      detail: string;
+      status: string;
+      status_code?: string;
+      delivered_at?: string;
+      log?: SMSLogEntry;
+    }>(`/notifications/sms/${id}/check-status/`),
+
+  resend: (id: number) =>
+    client.post<{
+      success: boolean;
+      detail: string;
+      status: string;
+      new_sms_log_id?: number;
+    }>(`/notifications/sms/${id}/resend/`),
+
+  exportCsv: async (params?: Record<string, any>, filename = 'telecom_sms_logs.csv') => {
+    const res = await client.get('/notifications/sms/export-csv/', {
+      params,
+      responseType: 'blob',
+    });
+    downloadCsvBlob(res.data, filename);
+  },
+};
+

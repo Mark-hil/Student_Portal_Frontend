@@ -7,7 +7,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard, BookOpen, BarChart2, Bell, User,
-  Plus, GraduationCap, LogOut, Search, ClipboardCheck, Users, Shield,
+  Plus, GraduationCap, LogOut, Search, ClipboardCheck, Users, Shield, ShieldCheck,
   Menu, X, Wallet, Coins
 } from 'lucide-react';
 import { C } from '../utils/theme';
@@ -30,6 +30,7 @@ import { FinanceDashboard } from './finance/FinanceDashboard';
 import { BursarManagement } from './admin/BursarManagement';
 import { UserManagement } from './admin/UserManagement';
 import { CourseManagement } from './admin/CourseManagement';
+import { AuditLogsView } from './admin/AuditLogsView';
 import { GradeBatchList } from './shared/GradeBatchList';
 import { NotificationsView } from './shared/NotificationsView';
 import { ProfileView } from './shared/ProfileView';
@@ -138,6 +139,7 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
     { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard },
     { id: 'students', label: 'Student Management', Icon: GraduationCap },
     { id: 'users', label: 'Staff & Roles', Icon: Users },
+    { id: 'audit_logs', label: 'Security & Audit Logs', Icon: ShieldCheck },
     { id: 'bursar', label: 'Bursar & Accounts', Icon: Coins },
     { id: 'courses_admin', label: 'Course Management', Icon: BookOpen },
     { id: 'review', label: 'Review Queue', Icon: ClipboardCheck },
@@ -165,6 +167,7 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
     notifications: 'Notifications', profile: 'My Profile',
     students: isDepartmentalHead ? 'Department Students' : isFinance ? 'Student Directory' : 'Student Management & Admissions',
     users: isDepartmentalHead ? 'Department Faculty & Staff' : 'Staff & Faculty Access Control',
+    audit_logs: 'Institutional Security & Audit Trail',
     courses_admin: 'Course Management',
     financials: 'Fees & Financials', bursar: 'Bursar & Accounts'
   };
@@ -181,11 +184,12 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
       case 'dashboard':
         if (isFinance) return <FinanceDashboard user={currentUser} onNav={setView} />;
         if (isLecturer) return <LecturerDashboard user={currentUser} />;
-        if (isOfficer) return <AdminDashboard user={currentUser} />;
+        if (isOfficer) return <AdminDashboard user={currentUser} onNav={setView} />;
         return <StudentDashboard user={currentUser} onNav={setView} />;
       case 'courses_lecturer': return <LecturerCoursesView user={currentUser} />;
       case 'students': return <UserManagement initialMode="students" user={currentUser} />;
       case 'users': return <UserManagement initialMode="staff" user={currentUser} />;
+      case 'audit_logs': return <AuditLogsView user={currentUser} />;
       case 'courses_admin': return <CourseManagement />;
       case 'bursar':
         if (isStaff) return <AdminDashboard user={currentUser} />;
