@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Phone, Sparkles, Check, Loader2, Shield } from 'lucide-react';
+import { Users, Phone, Check, Loader2, Shield } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { C } from '../../../../utils/theme';
 import { useBreakpoint } from '../../../../hooks/useBreakpoint';
@@ -249,7 +249,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
           {isStudentCreation && (
             <div style={{ padding: '12px 14px', background: '#eff6ff', borderRadius: 10, border: '1px solid #bfdbfe', fontSize: 12, color: '#1e40af', lineHeight: 1.5 }}>
               <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                <Sparkles size={14} /> Automatic ASDAM ID & Profile Registration Gate
+                <Shield size={14} /> Automatic ASDAM ID & Profile Registration Gate
               </div>
               Upon account creation, the student is assigned an official Student ID (e.g. <code>ASDAM/NUR/26/001</code>). They will receive an SMS and Email with their credentials and the Portal URL.
             </div>

@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   BookOpen, Calendar, Clock, MapPin, User, ChevronRight,
   Search, Filter, Plus, UserMinus, FileText, CheckCircle2,
-  AlertTriangle, Loader2, Video, X, ExternalLink, Sparkles,
+  AlertTriangle, Loader2, Video, X, ExternalLink,
   Layers, ArrowRight, LayoutGrid, CalendarRange, ShieldAlert,
   Info, History
 } from 'lucide-react';

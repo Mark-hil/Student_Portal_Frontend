@@ -17,6 +17,9 @@ import type {
   PortalRoleInfo, PortalFunction,
   AuditLogEntry, AuditLogStats,
   SMSLogEntry, SMSLogStats,
+  PasswordResetRequestPayload, PasswordResetRequestResponse,
+  PasswordResetVerifyPayload, PasswordResetVerifyResponse,
+  PasswordResetConfirmPayload, PasswordResetConfirmResponse,
 } from '../types';
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -36,6 +39,12 @@ export const authApi = {
   register:    (data: { email: string; password: string; first_name: string; last_name: string; role: string }) =>
     client.post<LoginResponse>('/auth/register/', data),
   logout:      (refresh?: string) => client.post('/auth/logout/', { refresh }),
+  requestPasswordReset: (data: PasswordResetRequestPayload) =>
+    client.post<PasswordResetRequestResponse>('/auth/password-reset/request/', data),
+  verifyPasswordReset:  (data: PasswordResetVerifyPayload) =>
+    client.post<PasswordResetVerifyResponse>('/auth/password-reset/verify/', data),
+  confirmPasswordReset: (data: PasswordResetConfirmPayload) =>
+    client.post<PasswordResetConfirmResponse>('/auth/password-reset/confirm/', data),
 };
 
 export const downloadCsvBlob = (data: any, defaultFilename: string) => {

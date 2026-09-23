@@ -4,12 +4,12 @@
  * high-contrast accessible inputs, and zero-scroll viewport fitting.
  * Styled via enterprise CSS design system (auth.css & components.css).
  */
-import React, { useState, FormEvent } from 'react';
+import React, { useState, useEffect, FormEvent } from 'react';
 import {
   GraduationCap, Mail, Lock, User, Eye, EyeOff, AlertCircle,
   ShieldCheck, Calendar, Award, Clock, ArrowRight,
-  BookOpen, Shield, Coins, KeyRound, CheckCircle2, HeartPulse, Sparkles, Phone,
-  Building2
+  BookOpen, Shield, Coins, KeyRound, CheckCircle2, HeartPulse, Phone,
+  Building2, ArrowLeft, Smartphone
 } from 'lucide-react';
 import client from '../api/client';
 import { authApi } from '../api/services';
@@ -77,7 +77,7 @@ const DEMO_ACCOUNTS = [
 ];
 
 export default function LoginPage({ onSuccess }: Props) {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot_password'>('login');
   const [registerType, setRegisterType] = useState<'moh' | 'custom'>('moh');
   const [selectedDemoRole, setSelectedDemoRole] = useState<string | null>('Student');
   const [showPassword, setShowPassword] = useState(false);
@@ -105,6 +105,30 @@ export default function LoginPage({ onSuccess }: Props) {
   });
   const [mohVerifiedData, setMohVerifiedData] = useState<MOHVerificationResult | null>(null);
   const [verifyingMoh, setVerifyingMoh] = useState(false);
+
+  // Password Reset state
+  const [resetStep, setResetStep] = useState<1 | 2>(1);
+  const [resetIdentifier, setResetIdentifier] = useState('');
+  const [resetChannel, setResetChannel] = useState<'sms' | 'email'>('sms');
+  const [resetCode, setResetCode] = useState('');
+  const [resetNewPassword, setResetNewPassword] = useState('');
+  const [resetConfirmPassword, setResetConfirmPassword] = useState('');
+  const [showResetNewPassword, setShowResetNewPassword] = useState(false);
+  const [showResetConfirmPassword, setShowResetConfirmPassword] = useState(false);
+  const [resetMaskedDestination, setResetMaskedDestination] = useState('');
+  const [resetCountdown, setResetCountdown] = useState(0);
+  const [resetSuccess, setResetSuccess] = useState('');
+
+  // Countdown effect for OTP resend
+  useEffect(() => {
+    let timer: any;
+    if (resetCountdown > 0) {
+      timer = setInterval(() => {
+        setResetCountdown(c => (c > 0 ? c - 1 : 0));
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [resetCountdown]);
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }));
@@ -235,6 +259,75 @@ export default function LoginPage({ onSuccess }: Props) {
     }
   };
 
+  const handleRequestReset = async (e?: FormEvent) => {
+    if (e) e.preventDefault();
+    if (!resetIdentifier.trim()) {
+      setError('Please enter your Student ID, Email, Phone, or MOH PIN.');
+      return;
+    }
+    setError('');
+    setResetSuccess('');
+    setLoading(true);
+    try {
+      const res = await authApi.requestPasswordReset({
+        identifier: resetIdentifier.trim(),
+        channel: resetChannel,
+      });
+      setResetMaskedDestination(res.data.masked_destination);
+      setResetStep(2);
+      setResetCountdown(60);
+      setResetSuccess(res.data.message || `Verification code dispatched via ${res.data.channel.toUpperCase()}.`);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || err.response?.data?.message || 'Failed to send reset code. Please check your identifier.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfirmReset = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!resetCode.trim() || resetCode.trim().length !== 6) {
+      setError('Please enter the 6-digit verification code.');
+      return;
+    }
+    if (!resetNewPassword || resetNewPassword.length < 8) {
+      setError('New password must be at least 8 characters long.');
+      return;
+    }
+    if (!resetConfirmPassword) {
+      setError('Please confirm your new password.');
+      return;
+    }
+    if (resetNewPassword !== resetConfirmPassword) {
+      setError('Passwords do not match. Please ensure both passwords match.');
+      return;
+    }
+
+    setError('');
+    setLoading(true);
+    try {
+      const res = await authApi.confirmPasswordReset({
+        identifier: resetIdentifier.trim(),
+        code: resetCode.trim(),
+        new_password: resetNewPassword,
+        confirm_password: resetConfirmPassword,
+      });
+      const tokens = {
+        access: res.data.tokens?.access,
+        refresh: res.data.tokens?.refresh,
+      };
+      if (tokens.access) {
+        localStorage.setItem('access_token', tokens.access);
+        localStorage.setItem('refresh_token', tokens.refresh);
+      }
+      onSuccess(res.data.user, tokens);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || err.response?.data?.message || 'Failed to reset password. Please check your verification code.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="auth-viewport">
       {/* Ambient Glows */}
@@ -310,31 +403,64 @@ export default function LoginPage({ onSuccess }: Props) {
         <div className="auth-panel">
           <div style={{ marginBottom: 14 }}>
             <h2 className="auth-header-title">
-              {mode === 'login' ? 'Sign in to your account' : 'Create an Account'}
+              {mode === 'login'
+                ? 'Sign in to your account'
+                : mode === 'forgot_password'
+                ? 'Reset your password'
+                : 'Create an Account'}
             </h2>
             <p className="auth-header-sub">
               {mode === 'login'
                 ? 'Select a portal role or enter your credentials below'
+                : mode === 'forgot_password'
+                ? 'Recover access to your student or institutional portal account'
                 : 'Enter your institutional details to register'}
             </p>
           </div>
 
           {/* Mode Switcher */}
-          <div className="mode-segmented-tabs">
-            {(['login', 'register'] as const).map(m => (
+          {mode === 'forgot_password' ? (
+            <div style={{ marginBottom: 12 }}>
               <button
-                key={m}
                 type="button"
-                className={`mode-tab-btn ${mode === m ? 'active' : ''}`}
                 onClick={() => {
-                  setMode(m);
+                  setMode('login');
                   setError('');
+                  setResetSuccess('');
+                }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  fontSize: '0.8125rem',
+                  fontWeight: 600,
+                  color: 'var(--primary-600)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '4px 0',
                 }}
               >
-                {m === 'login' ? 'Sign In' : 'Register / Activate'}
+                <ArrowLeft size={14} /> Back to Sign In
               </button>
-            ))}
-          </div>
+            </div>
+          ) : (
+            <div className="mode-segmented-tabs">
+              {(['login', 'register'] as const).map(m => (
+                <button
+                  key={m}
+                  type="button"
+                  className={`mode-tab-btn ${mode === m ? 'active' : ''}`}
+                  onClick={() => {
+                    setMode(m);
+                    setError('');
+                  }}
+                >
+                  {m === 'login' ? 'Sign In' : 'Register / Activate'}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Registration Type Sub-tabs */}
           {mode === 'register' && (
@@ -435,6 +561,24 @@ export default function LoginPage({ onSuccess }: Props) {
             </div>
           )}
 
+          {/* Success Notice for Password Reset */}
+          {resetSuccess && (
+            <div
+              className="flex items-center gap-2"
+              style={{
+                padding: '9px 12px',
+                borderRadius: 'var(--radius-md)',
+                marginBottom: 12,
+                background: 'rgba(16, 185, 129, 0.1)',
+                border: '1px solid rgba(16, 185, 129, 0.3)',
+                color: 'var(--emerald-800)',
+              }}
+            >
+              <CheckCircle2 size={15} color="var(--emerald-600)" className="shrink-0" />
+              <span style={{ fontSize: '0.78125rem', fontWeight: 600 }}>{resetSuccess}</span>
+            </div>
+          )}
+
           {/* Error Notice */}
           {error && (
             <div className="flex items-center gap-2 badge-danger" style={{ padding: '9px 12px', borderRadius: 'var(--radius-md)', marginBottom: 12 }}>
@@ -444,7 +588,292 @@ export default function LoginPage({ onSuccess }: Props) {
           )}
 
           {/* Auth Form */}
-          {mode === 'login' ? (
+          {mode === 'forgot_password' ? (
+            <div className="flex flex-col gap-3">
+              {resetStep === 1 ? (
+                /* Step 1: Request Code */
+                <form onSubmit={handleRequestReset} className="flex flex-col gap-3">
+                  <div style={{ background: 'rgba(59, 130, 246, 0.08)', padding: '10px 12px', borderRadius: 'var(--radius-md)', border: '1px solid #bfdbfe' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#1e40af', fontWeight: 700, fontSize: '0.8125rem' }}>
+                      <KeyRound size={15} color="#2563eb" />
+                      Account Self-Service Recovery
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: '#1d4ed8', marginTop: 3, lineHeight: 1.4 }}>
+                      Enter your official Student ID (e.g. ASDAM/NUR/26/001), Registered Email, Phone Number, or MOH PIN to receive an OTP verification code.
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Student ID, Email, Phone, or MOH PIN</label>
+                    <div className="input-wrap">
+                      <User size={15} className="input-icon" />
+                      <input
+                        type="text"
+                        className="form-input has-icon"
+                        value={resetIdentifier}
+                        onChange={e => setResetIdentifier(e.target.value)}
+                        required
+                        placeholder="e.g. ASDAM/NUR/26/001, 0241234567, or email"
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Delivery Channel</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 4 }}>
+                      <button
+                        type="button"
+                        onClick={() => setResetChannel('sms')}
+                        style={{
+                          padding: '8px 10px',
+                          borderRadius: 'var(--radius-md)',
+                          border: resetChannel === 'sms' ? '1.5px solid var(--primary-600)' : '1px solid var(--border-light)',
+                          background: resetChannel === 'sms' ? 'var(--primary-50)' : '#ffffff',
+                          color: resetChannel === 'sms' ? 'var(--primary-700)' : 'var(--slate-700)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 7,
+                          cursor: 'pointer',
+                          fontWeight: resetChannel === 'sms' ? 700 : 500,
+                          fontSize: '0.75rem',
+                          textAlign: 'left',
+                        }}
+                      >
+                        <Smartphone size={15} color={resetChannel === 'sms' ? 'var(--primary-600)' : 'var(--slate-400)'} />
+                        <div>
+                          <div>SMS Text</div>
+                          <div style={{ fontSize: '0.65625rem', color: resetChannel === 'sms' ? 'var(--primary-600)' : 'var(--slate-400)', fontWeight: 400 }}>
+                            Instant Mobile
+                          </div>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setResetChannel('email')}
+                        style={{
+                          padding: '8px 10px',
+                          borderRadius: 'var(--radius-md)',
+                          border: resetChannel === 'email' ? '1.5px solid var(--primary-600)' : '1px solid var(--border-light)',
+                          background: resetChannel === 'email' ? 'var(--primary-50)' : '#ffffff',
+                          color: resetChannel === 'email' ? 'var(--primary-700)' : 'var(--slate-700)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 7,
+                          cursor: 'pointer',
+                          fontWeight: resetChannel === 'email' ? 700 : 500,
+                          fontSize: '0.75rem',
+                          textAlign: 'left',
+                        }}
+                      >
+                        <Mail size={15} color={resetChannel === 'email' ? 'var(--primary-600)' : 'var(--slate-400)'} />
+                        <div>
+                          <div>Email</div>
+                          <div style={{ fontSize: '0.65625rem', color: resetChannel === 'email' ? 'var(--primary-600)' : 'var(--slate-400)', fontWeight: 400 }}>
+                            Inbox Notification
+                          </div>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading || !resetIdentifier.trim()}
+                    className="btn btn-primary"
+                    style={{ marginTop: 4 }}
+                  >
+                    {loading ? 'Dispatching Verification Code…' : (
+                      <>
+                        Send Reset Code <ArrowRight size={15} />
+                      </>
+                    )}
+                  </button>
+                </form>
+              ) : (
+                /* Step 2: Enter OTP & Set New Password */
+                <form onSubmit={handleConfirmReset} className="flex flex-col gap-3">
+                  <div style={{
+                    background: '#f0fdf4',
+                    border: '1px solid #86efac',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '10px 12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                      <CheckCircle2 size={16} color="#16a34a" className="shrink-0" />
+                      <div style={{ fontSize: '0.75rem', color: '#166534', lineHeight: 1.3 }}>
+                        Code sent to <strong>{resetMaskedDestination}</strong> via {resetChannel.toUpperCase()}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setResetStep(1);
+                        setError('');
+                        setResetSuccess('');
+                      }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        fontSize: '0.71875rem',
+                        color: 'var(--slate-600)',
+                        textDecoration: 'underline',
+                        cursor: 'pointer',
+                        padding: '2px 4px',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      Change
+                    </button>
+                  </div>
+
+                  {/* 6-Digit OTP */}
+                  <div className="form-group">
+                    <div className="flex items-center justify-between">
+                      <label className="form-label">6-Digit Verification Code</label>
+                      {resetCountdown > 0 ? (
+                        <span style={{ fontSize: '0.71875rem', color: 'var(--slate-400)', fontWeight: 500 }}>
+                          Resend in {resetCountdown}s
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleRequestReset()}
+                          disabled={loading}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            fontSize: '0.71875rem',
+                            color: 'var(--primary-600)',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            padding: 0,
+                          }}
+                        >
+                          Resend Code
+                        </button>
+                      )}
+                    </div>
+                    <div className="input-wrap">
+                      <KeyRound size={15} className="input-icon" />
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={6}
+                        className="form-input has-icon"
+                        value={resetCode}
+                        onChange={e => setResetCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                        placeholder="123456"
+                        required
+                        style={{
+                          letterSpacing: '0.35em',
+                          fontSize: '1.0625rem',
+                          fontWeight: 700,
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* New Password */}
+                  <div className="form-group">
+                    <label className="form-label">New Password</label>
+                    <div className="input-wrap">
+                      <Lock size={15} className="input-icon" />
+                      <input
+                        type={showResetNewPassword ? 'text' : 'password'}
+                        className="form-input has-icon"
+                        value={resetNewPassword}
+                        onChange={e => setResetNewPassword(e.target.value)}
+                        required
+                        placeholder="At least 8 characters"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowResetNewPassword(!showResetNewPassword)}
+                        style={{
+                          position: 'absolute',
+                          right: 8,
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          color: 'var(--slate-400)',
+                          display: 'flex',
+                          padding: 4,
+                        }}
+                      >
+                        {showResetNewPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Confirm New Password */}
+                  <div className="form-group">
+                    <label className="form-label">Confirm New Password</label>
+                    <div className="input-wrap">
+                      <Lock size={15} className="input-icon" />
+                      <input
+                        type={showResetConfirmPassword ? 'text' : 'password'}
+                        className="form-input has-icon"
+                        value={resetConfirmPassword}
+                        onChange={e => setResetConfirmPassword(e.target.value)}
+                        required
+                        placeholder="Re-enter new password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowResetConfirmPassword(!showResetConfirmPassword)}
+                        style={{
+                          position: 'absolute',
+                          right: 8,
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          color: 'var(--slate-400)',
+                          display: 'flex',
+                          padding: 4,
+                        }}
+                      >
+                        {showResetConfirmPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
+                    </div>
+                    {/* Live Match Feedback */}
+                    {resetConfirmPassword && (
+                      <div style={{ marginTop: 4, fontSize: '0.71875rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
+                        {resetNewPassword === resetConfirmPassword ? (
+                          <>
+                            <CheckCircle2 size={13} color="#16a34a" />
+                            <span style={{ color: '#16a34a' }}>Passwords match</span>
+                          </>
+                        ) : (
+                          <>
+                            <AlertCircle size={13} color="#dc2626" />
+                            <span style={{ color: '#dc2626' }}>Passwords do not match</span>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading || resetCode.length !== 6 || !resetNewPassword || resetNewPassword !== resetConfirmPassword}
+                    className="btn btn-primary"
+                    style={{ marginTop: 4 }}
+                  >
+                    {loading ? 'Updating Password & Signing In…' : (
+                      <>
+                        Reset Password & Sign In <ArrowRight size={15} />
+                      </>
+                    )}
+                  </button>
+                </form>
+              )}
+            </div>
+          ) : mode === 'login' ? (
             <form onSubmit={handleSubmit} className="flex flex-col gap-3">
               <div className="form-group">
                 <label className="form-label">Email, Student ID, or MOH PIN</label>
@@ -500,6 +929,33 @@ export default function LoginPage({ onSuccess }: Props) {
                 </div>
               </div>
 
+              <div className="flex items-center justify-between" style={{ marginTop: -2, marginBottom: 2 }}>
+                <div />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('forgot_password');
+                    setResetStep(1);
+                    setError('');
+                    setResetSuccess('');
+                    if (form.email && !form.email.includes('@uniportal.edu')) {
+                      setResetIdentifier(form.email);
+                    }
+                  }}
+                  style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    color: 'var(--primary-600)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: 0,
+                  }}
+                >
+                  Forgot password?
+                </button>
+              </div>
+
               <button type="submit" disabled={loading} className="btn btn-primary" style={{ marginTop: 4 }}>
                 {loading ? 'Signing in…' : (
                   <>
@@ -516,7 +972,6 @@ export default function LoginPage({ onSuccess }: Props) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   <div style={{ background: 'rgba(16, 185, 129, 0.08)', padding: '10px 12px', borderRadius: 'var(--radius-md)', border: '1px solid #a7f3d0' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#065f46', fontWeight: 700, fontSize: '0.8125rem' }}>
-                      <Sparkles size={14} color="#059669" />
                       Admitted Students Activation
                     </div>
                     <div style={{ fontSize: '0.75rem', color: '#047857', marginTop: 3 }}>

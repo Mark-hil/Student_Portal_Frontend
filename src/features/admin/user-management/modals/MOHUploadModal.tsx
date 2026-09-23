@@ -5,7 +5,6 @@ import {
   FileText,
   Download,
   UploadCloud,
-  Sparkles,
   CheckCircle2,
   AlertTriangle,
   Mail,
@@ -300,7 +299,7 @@ export const MOHUploadModal: React.FC<MOHUploadModalProps> = ({
                   </>
                 ) : (
                   <>
-                    <Sparkles size={16} /> {isDryRun ? 'Validate Roster (Dry Run)' : 'Import & Generate Student IDs'}
+                    <UploadCloud size={16} /> {isDryRun ? 'Validate Roster (Dry Run)' : 'Import & Generate Student IDs'}
                   </>
                 )}
               </button>

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   BookOpen, Users, ChevronRight, Layers, FileText,
-  Search, Filter, Sparkles, Plus, GraduationCap
+  Search, Filter, Plus, GraduationCap
 } from 'lucide-react';
 import { C } from '../../utils/theme';
 import { coursesApi } from '../../api/services';

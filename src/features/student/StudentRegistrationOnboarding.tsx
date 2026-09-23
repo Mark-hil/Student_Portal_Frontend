@@ -7,7 +7,7 @@ import React, { useState } from 'react';
 import {
   GraduationCap, User, MapPin, Users, Lock, CheckCircle2,
   AlertCircle, ArrowRight, ArrowLeft, ShieldCheck, HeartPulse,
-  Phone, Mail, Calendar, Globe, Building2, Sparkles, LogOut,
+  Phone, Mail, Calendar, Globe, Building2, Loader2, LogOut,
   CreditCard, Info
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -353,7 +353,7 @@ export function StudentRegistrationOnboarding({ user, onComplete, onLogout }: Pr
                 gap: 10,
               }}
             >
-              <Sparkles size={18} color="#818cf8" /> Entering ASDAM Portal...
+              <Loader2 size={18} className="animate-spin" color="#818cf8" /> Entering ASDAM Portal...
             </div>
           </div>
         )}

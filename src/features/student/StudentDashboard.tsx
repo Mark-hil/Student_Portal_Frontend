@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Award, BookOpen, Layers, AlertCircle, ArrowUpRight, Sparkles, CreditCard, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { Award, BookOpen, Layers, AlertCircle, ArrowUpRight, CreditCard, ShieldAlert, CheckCircle2 } from 'lucide-react';
 import { gradeColor } from '../../utils/theme';
 import { coursesApi, gradesApi, financialsApi } from '../../api/services';
 import type { User as UserType } from '../../types';
@@ -49,11 +49,11 @@ export function StudentDashboard({ user, onNav }: { user: UserType; onNav: (v: s
               </span>
               <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>•</span>
               <span className="flex items-center gap-1" style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>
-                <Sparkles size={15} color="#f59e0b" /> Academic Standing: Good Standing
+                <Award size={15} color="#f59e0b" /> Academic Standing: Good Standing
               </span>
             </div>
             <h1 className="hero-title">
-              Welcome back, {user.first_name}! 👋
+              Welcome back, {user.first_name}! 
             </h1>
             <p className="hero-subtitle">
               You have <strong style={{ color: '#fff' }}>{my.length} active courses</strong> enrolled with{' '}

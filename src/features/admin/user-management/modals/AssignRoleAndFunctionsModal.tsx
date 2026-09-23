@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  ShieldCheck, Check, RotateCcw, Loader2, Sparkles,
+  ShieldCheck, Check, RotateCcw, Loader2,
   Layers, Users, Award, BookOpen, Building2,
   DollarSign, Key, CheckSquare, Square, Lock
 } from 'lucide-react';
@@ -625,7 +625,7 @@ export const AssignRoleAndFunctionsModal: React.FC<AssignRoleAndFunctionsModalPr
                   </>
                 ) : (
                   <>
-                    <Sparkles size={16} />
+                    <ShieldCheck size={16} />
                     Apply Role & Functions
                   </>
                 )}

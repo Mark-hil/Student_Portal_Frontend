@@ -737,3 +737,45 @@ export interface SMSLogStats {
   delivery_rate_percent: number;
   recent: SMSLogEntry[];
 }
+
+// ── Password Reset ─────────────────────────────────────────────────────────────
+export interface PasswordResetRequestPayload {
+  identifier: string;
+  channel?: 'sms' | 'email';
+}
+
+export interface PasswordResetRequestResponse {
+  status: 'success';
+  message: string;
+  channel: 'sms' | 'email';
+  masked_destination: string;
+  identifier: string;
+}
+
+export interface PasswordResetVerifyPayload {
+  identifier: string;
+  code: string;
+}
+
+export interface PasswordResetVerifyResponse {
+  status: 'verified';
+  message: string;
+  identifier: string;
+}
+
+export interface PasswordResetConfirmPayload {
+  identifier: string;
+  code: string;
+  new_password: string;
+  confirm_password: string;
+}
+
+export interface PasswordResetConfirmResponse {
+  status: 'success';
+  message: string;
+  user: User;
+  tokens: {
+    access: string;
+    refresh: string;
+  };
+}
