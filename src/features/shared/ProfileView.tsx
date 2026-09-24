@@ -47,8 +47,8 @@ export function ProfileView({ user, onUserUpdate, onNav }: Props) {
 
   const isStudent = user.role === 'student';
   const isLecturer = user.role === 'lecturer' || user.role === 'instructor';
-  const isFinance = user.role === 'finance-officer' || user.role === 'finance';
-  const isOfficer = user.role === 'super-admin' || user.role === 'admin' || user.role === 'academic-officer' || user.role === 'staff' || user.role === 'departmental-head' || isFinance;
+  const isFinance = user.role === 'finance-officer' || user.role === 'finance_officer' || user.role === 'finance';
+  const isOfficer = user.role === 'super-admin' || user.role === 'super_admin' || user.role === 'admin' || user.role === 'academic-officer' || user.role === 'academic_officer' || user.role === 'staff' || user.role === 'departmental-head' || user.role === 'head_of_department' || user.role === 'head-of-department' || user.role === 'hod' || isFinance;
 
   // Role-specific Queries
   const { data: gpa } = useQuery({
@@ -761,12 +761,14 @@ export function ProfileView({ user, onUserUpdate, onNav }: Props) {
             <Card style={{ padding: '16px 20px', borderLeft: `4px solid ${C.purple}` }}>
               <div style={{ fontSize: 11, color: C.slate4, textTransform: 'uppercase', letterSpacing: '.05em', fontWeight: 600 }}>System Privileges</div>
               <div style={{ fontSize: 17, fontWeight: 700, color: C.slate9, marginTop: 4 }}>
-                {user.role === 'super-admin' || user.role === 'admin'
+                {user.role === 'super-admin' || user.role === 'super_admin' || user.role === 'admin'
                   ? 'Super Administrator'
-                  : user.role === 'departmental-head'
+                  : user.role === 'departmental-head' || user.role === 'head_of_department' || user.role === 'head-of-department' || user.role === 'hod'
                   ? 'Departmental Head'
-                  : user.role === 'finance-officer' || user.role === 'finance'
+                  : user.role === 'finance-officer' || user.role === 'finance_officer' || user.role === 'finance'
                   ? 'Finance Officer'
+                  : user.role === 'lecturer' || user.role === 'instructor'
+                  ? 'Lecturer'
                   : 'Academic Officer'}
               </div>
               <div style={{ fontSize: 11, color: C.purple, marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>

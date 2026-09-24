@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Camera, Loader2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useQueryClient } from '@tanstack/react-query';
@@ -41,12 +41,51 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
     user.role === 'admin' ||
     (user as any)?.is_superuser;
 
+  const normalizeRoleValue = (r?: string) => {
+    switch (r) {
+      case 'super-admin':
+      case 'admin':
+      case 'super_admin':
+        return 'super_admin';
+      case 'academic-officer':
+      case 'academic_officer':
+      case 'staff':
+      case 'officer':
+        return 'academic_officer';
+      case 'departmental-head':
+      case 'departmental_head':
+      case 'head-of-department':
+      case 'head_of_department':
+      case 'hod':
+        return 'head_of_department';
+      case 'finance-officer':
+      case 'finance_officer':
+      case 'bursar':
+      case 'finance':
+        return 'finance';
+      case 'instructor':
+      case 'faculty':
+      case 'lecturer':
+        return 'lecturer';
+      default:
+        return r || 'student';
+    }
+  };
+
   const [firstName, setFirstName] = useState(user.first_name || '');
   const [lastName, setLastName] = useState(user.last_name || '');
   const [department, setDepartment] = useState(user.department || '');
-  const [role, setRole] = useState(user.role || 'student');
+  const [role, setRole] = useState(normalizeRoleValue(user.role));
   const [avatar, setAvatar] = useState(user.avatar || '');
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+
+  useEffect(() => {
+    setFirstName(user.first_name || '');
+    setLastName(user.last_name || '');
+    setDepartment(user.department || '');
+    setRole(normalizeRoleValue(user.role));
+    setAvatar(user.avatar || '');
+  }, [user]);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -176,15 +215,11 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
             >
               <option value="student">Student</option>
               <option value="lecturer">Lecturer / Instructor</option>
-              <option value="departmental-head">Departmental Head</option>
-              <option value="academic-officer">Academic Officer</option>
-              <option value="finance-officer">Finance Officer</option>
+              <option value="head_of_department">Head of Department (HOD)</option>
+              <option value="academic_officer">Academic Officer</option>
+              <option value="finance">Finance Officer</option>
               {isActorSuperAdmin && (
-                <option value="super-admin">Super Administrator</option>
-              )}
-              {/* Legacy fallback options */}
-              {['admin', 'staff', 'instructor', 'finance'].includes(role) && (
-                <option value={role} disabled>Legacy: {role}</option>
+                <option value="super_admin">Super Administrator</option>
               )}
             </select>
           </div>

@@ -62,9 +62,9 @@ export function StudentDashboard({ user, onNav }: { user: UserType; onNav: (v: s
           </div>
 
           <div className="hero-actions">
-            <button onClick={() => onNav('financials')} className="btn btn-primary" style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#0f172a', fontWeight: 800 }}>
+            {/* <button onClick={() => onNav('financials')} className="btn btn-primary" style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#0f172a', fontWeight: 800 }}>
               <CreditCard size={16} /> Pay Fees (GH₵ {feeBalance.toFixed(2)})
-            </button>
+            </button> */}
             <button onClick={() => onNav('register')} className="btn btn-outline" style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)' }}>
               Course Registration <ArrowUpRight size={16} />
             </button>
