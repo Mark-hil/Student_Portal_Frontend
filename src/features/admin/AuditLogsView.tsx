@@ -336,9 +336,9 @@ export function AuditLogsView({ user }: AuditLogsViewProps) {
             borderRadius: 6,
             fontSize: 11,
             fontWeight: 700,
-            background: '#eff6ff',
-            color: '#1d4ed8',
-            border: '1px solid #bfdbfe'
+            background: '#f0fdf4',
+            color: '#047857',
+            border: '1px solid #bbf7d0'
           }}>
             <Send size={12} /> Submitted
           </span>
@@ -418,7 +418,7 @@ export function AuditLogsView({ user }: AuditLogsViewProps) {
 
   const getCategoryColor = (cat: AuditLogCategory) => {
     switch (cat) {
-      case 'auth': return { bg: '#eef2ff', text: '#4338ca', border: '#c7d2fe' };
+      case 'auth': return { bg: '#ecfdf5', text: '#065f46', border: '#a7f3d0' };
       case 'user_management': return { bg: '#fdf2f8', text: '#be185d', border: '#fbcfe8' };
       case 'academics': return { bg: '#f0fdf4', text: '#15803d', border: '#bbf7d0' };
       case 'financials': return { bg: '#fffbeb', text: '#b45309', border: '#fde68a' };
@@ -462,14 +462,14 @@ export function AuditLogsView({ user }: AuditLogsViewProps) {
       {/* ── Banner / Header ────────────────────────────────────────────── */}
       <div
         style={{
-          background: 'linear-gradient(135deg, #090e1a 0%, #1e1b4b 60%, #172554 100%)',
+          background: 'linear-gradient(135deg, #064e3b 0%, #072118 60%, #04130d 100%)',
           borderRadius: 20,
           padding: '28px 32px',
           color: '#ffffff',
           position: 'relative',
           overflow: 'hidden',
-          boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.4)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 10px 25px -5px rgba(4, 19, 13, 0.4)',
+          border: '1px solid rgba(250, 204, 21, 0.25)',
         }}
       >
         <div
@@ -549,14 +549,14 @@ export function AuditLogsView({ user }: AuditLogsViewProps) {
                   gap: 6,
                   padding: '7px 16px',
                   borderRadius: 8,
-                  background: '#4f46e5',
+                  background: '#047857',
                   color: '#ffffff',
-                  border: '1px solid #4338ca',
+                  border: '1px solid #065f46',
                   fontSize: 13,
                   fontWeight: 600,
                   cursor: isExportingAudit ? 'not-allowed' : 'pointer',
                   opacity: isExportingAudit ? 0.7 : 1,
-                  boxShadow: '0 4px 12px rgba(79, 70, 229, 0.35)'
+                  boxShadow: '0 4px 12px rgba(4, 120, 87, 0.35)'
                 }}
               >
                 <FileSpreadsheet size={15} />
@@ -672,8 +672,8 @@ export function AuditLogsView({ user }: AuditLogsViewProps) {
                 label: 'Total Events Logged',
                 val: stats?.total_events ?? 0,
                 sub: 'System-wide activity record',
-                color: '#4f46e5',
-                bg: '#eef2ff',
+                color: '#047857',
+                bg: '#f0fdf4',
                 icon: Layers,
               },
               {
@@ -744,10 +744,10 @@ export function AuditLogsView({ user }: AuditLogsViewProps) {
                         fontWeight: active ? 700 : 500,
                         cursor: 'pointer',
                         transition: 'all 0.15s ease',
-                        border: active ? '1px solid #4f46e5' : '1px solid #e2e8f0',
-                        background: active ? '#4f46e5' : '#ffffff',
+                        border: active ? '1px solid #047857' : '1px solid #e2e8f0',
+                        background: active ? '#047857' : '#ffffff',
                         color: active ? '#ffffff' : C.slate7,
-                        boxShadow: active ? '0 2px 8px rgba(79, 70, 229, 0.25)' : 'none',
+                        boxShadow: active ? '0 2px 8px rgba(4, 120, 87, 0.25)' : 'none',
                       }}
                     >
                       {tab.label}
@@ -868,8 +868,8 @@ export function AuditLogsView({ user }: AuditLogsViewProps) {
                                   width: 28,
                                   height: 28,
                                   borderRadius: '50%',
-                                  background: '#e0e7ff',
-                                  color: '#4338ca',
+                                  background: '#dcfce7',
+                                  color: '#047857',
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
@@ -1561,7 +1561,7 @@ export function AuditLogsView({ user }: AuditLogsViewProps) {
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#4f46e5', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#047857', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Audit Event #{inspectEntry.id}
                   </span>
                   {renderAuditStatusBadge(inspectEntry.status)}
@@ -1635,7 +1635,7 @@ export function AuditLogsView({ user }: AuditLogsViewProps) {
             {inspectEntry.changes && Object.keys(inspectEntry.changes).length > 0 ? (
               <div style={{ marginBottom: 20 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: C.slate8, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <FileText size={14} color="#4f46e5" />
+                  <FileText size={14} color="#047857" />
                   State Change Diffs (Before vs After)
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
@@ -1662,8 +1662,9 @@ export function AuditLogsView({ user }: AuditLogsViewProps) {
                   Raw Execution Metadata
                 </div>
                 <pre style={{
-                  background: '#1e293b',
+                  background: '#04130d',
                   color: '#f8fafc',
+                  border: '1px solid rgba(250, 204, 21, 0.2)',
                   padding: 14,
                   borderRadius: 8,
                   fontSize: 11.5,
@@ -1839,8 +1840,9 @@ export function AuditLogsView({ user }: AuditLogsViewProps) {
                   Raw Arkesel Gateway Response Payload
                 </div>
                 <pre style={{
-                  background: '#1e293b',
+                  background: '#04130d',
                   color: '#f8fafc',
+                  border: '1px solid rgba(250, 204, 21, 0.2)',
                   padding: 14,
                   borderRadius: 8,
                   fontSize: 11.5,

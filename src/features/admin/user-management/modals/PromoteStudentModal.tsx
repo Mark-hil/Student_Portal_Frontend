@@ -43,10 +43,10 @@ export const PromoteStudentModal: React.FC<PromoteStudentModalProps> = ({
         </div>
 
         {isFinalYear ? (
-          <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12, padding: 14, marginBottom: 16 }}>
+          <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: 14, marginBottom: 16 }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-              <Award size={20} color="#2563eb" style={{ flexShrink: 0, marginTop: 2 }} />
-              <div style={{ fontSize: 13, color: '#1e40af', lineHeight: 1.5 }}>
+              <Award size={20} color="#d97706" style={{ flexShrink: 0, marginTop: 2 }} />
+              <div style={{ fontSize: 13, color: '#92400e', lineHeight: 1.5 }}>
                 <strong>Final Year Diploma Graduation:</strong> This student is currently at <strong>Level 300</strong>. Promoting will conclude their diploma program, assign academic status <strong>GRADUATED (Alumnus)</strong>, and record their graduation date.
               </div>
             </div>

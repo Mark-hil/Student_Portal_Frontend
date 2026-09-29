@@ -271,7 +271,7 @@ export const BursarManagement: React.FC = () => {
   if (loading && !data) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, color: '#94a3b8' }}>
-        <RefreshCw size={32} className="animate-spin" color="#4f46e5" style={{ marginBottom: 12 }} />
+        <RefreshCw size={32} className="animate-spin" color="#047857" style={{ marginBottom: 12 }} />
         <p style={{ fontSize: 14 }}>Loading Bursar revenue metrics and partner bank interfaces...</p>
       </div>
     );
@@ -360,9 +360,9 @@ export const BursarManagement: React.FC = () => {
           onClick={() => setActiveTab('overview')}
           className={`fin-btn-outline ${activeTab === 'overview' ? 'active' : ''}`}
           style={{
-            background: activeTab === 'overview' ? '#4f46e5' : '#ffffff',
+            background: activeTab === 'overview' ? '#047857' : '#ffffff',
             color: activeTab === 'overview' ? '#ffffff' : '#334155',
-            borderColor: activeTab === 'overview' ? '#4f46e5' : '#cbd5e1',
+            borderColor: activeTab === 'overview' ? '#047857' : '#cbd5e1',
           }}
         >
           <TrendingUp size={15} />
@@ -373,9 +373,9 @@ export const BursarManagement: React.FC = () => {
           onClick={() => setActiveTab('bank_api')}
           className={`fin-btn-outline ${activeTab === 'bank_api' ? 'active' : ''}`}
           style={{
-            background: activeTab === 'bank_api' ? '#2563eb' : '#ffffff',
+            background: activeTab === 'bank_api' ? '#047857' : '#ffffff',
             color: activeTab === 'bank_api' ? '#ffffff' : '#334155',
-            borderColor: activeTab === 'bank_api' ? '#2563eb' : '#cbd5e1',
+            borderColor: activeTab === 'bank_api' ? '#047857' : '#cbd5e1',
             fontWeight: 800,
           }}
         >
@@ -450,7 +450,7 @@ export const BursarManagement: React.FC = () => {
                   <span>GH₵ {Number(metrics.momo_total).toFixed(2)}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 700 }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#2563eb' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#047857' }}>
                     <Building2 size={14} /> Banks:
                   </span>
                   <span>GH₵ {Number(metrics.bank_total).toFixed(2)}</span>
@@ -476,7 +476,7 @@ export const BursarManagement: React.FC = () => {
             <div className="fin-card-header">
               <div>
                 <h2 className="fin-card-title">
-                  <Building2 size={20} color="#2563eb" />
+                  <Building2 size={20} color="#047857" />
                   Partner Bank Teller Terminal Simulator
                 </h2>
                 <div className="fin-card-sub">
@@ -504,7 +504,7 @@ export const BursarManagement: React.FC = () => {
                   }}
                 />
               </div>
-              <button type="submit" disabled={tellerSearching} className="fin-btn-primary" style={{ background: '#2563eb' }}>
+              <button type="submit" disabled={tellerSearching} className="fin-btn-primary">
                 {tellerSearching ? 'Querying...' : 'Lookup Student'}
               </button>
             </form>
@@ -601,7 +601,7 @@ export const BursarManagement: React.FC = () => {
             <div className="fin-card-header">
               <div>
                 <h2 className="fin-card-title">
-                  <Receipt size={20} color="#4f46e5" />
+                  <Receipt size={20} color="#047857" />
                   Recent University Cash Collections
                 </h2>
                 <div className="fin-card-sub">Audit trail of verified incoming student fee payments</div>
@@ -627,7 +627,7 @@ export const BursarManagement: React.FC = () => {
                   <tbody>
                     {data.recent_payments.map((p) => (
                       <tr key={p.id}>
-                        <td style={{ fontFamily: 'monospace', fontWeight: 800, color: '#4f46e5' }}>{p.receipt_number}</td>
+                        <td style={{ fontFamily: 'monospace', fontWeight: 800, color: '#047857' }}>{p.receipt_number}</td>
                         <td style={{ color: '#64748b', fontSize: 12 }}>{new Date(p.created_at).toLocaleString()}</td>
                         <td>
                           <div style={{ fontWeight: 700, color: '#0f172a' }}>{p.student_name}</div>
@@ -664,8 +664,8 @@ export const BursarManagement: React.FC = () => {
       {activeTab === 'bank_api' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           {/* Informational Banner */}
-          <div style={{ padding: 20, background: 'linear-gradient(135deg, #1e3a8a, #0f172a)', borderRadius: 16, color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 700, color: '#93c5fd', textTransform: 'uppercase', marginBottom: 6 }}>
+          <div style={{ padding: 20, background: 'linear-gradient(135deg, #064e3b, #04130d)', borderRadius: 16, color: '#fff', border: '1px solid rgba(250, 204, 21, 0.25)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 700, color: '#facc15', textTransform: 'uppercase', marginBottom: 6 }}>
               <BookOpen size={16} />
               Partner Bank Integration Specification (API Docs)
             </div>
@@ -732,7 +732,7 @@ export const BursarManagement: React.FC = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 12 }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ padding: '3px 8px', background: '#eff6ff', color: '#2563eb', borderRadius: 6, fontWeight: 900, fontSize: 12, fontFamily: 'monospace' }}>
+                  <span style={{ padding: '3px 8px', background: '#f0fdf4', color: '#047857', borderRadius: 6, fontWeight: 900, fontSize: 12, fontFamily: 'monospace' }}>
                     POST
                   </span>
                   <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#0f172a' }}>
@@ -890,7 +890,7 @@ export const BursarManagement: React.FC = () => {
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         {slip.slip_image ? (
-                          <a href={slip.slip_image} target="_blank" rel="noreferrer" style={{ color: '#4f46e5', fontWeight: 700, fontSize: 12 }}>
+                          <a href={slip.slip_image} target="_blank" rel="noreferrer" style={{ color: '#047857', fontWeight: 700, fontSize: 12 }}>
                             View Image
                           </a>
                         ) : (

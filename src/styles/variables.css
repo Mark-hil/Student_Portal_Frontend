@@ -2,26 +2,38 @@
  * CSS Design Tokens — Institutional UniPortal Design System
  */
 :root {
-  /* Brand Navy & Slate Atmosphere */
-  --bg-app: #090d16;
-  --bg-surface: #0f172a;
-  --bg-surface-elevated: #1e293b;
-  --bg-surface-glass: rgba(15, 23, 42, 0.75);
+  /* Brand Forest Evergreen & Deep Slate Atmosphere */
+  --bg-app: #04130d;
+  --bg-surface: #072118;
+  --bg-surface-elevated: #0d3125;
+  --bg-surface-glass: rgba(7, 33, 24, 0.8);
   --bg-canvas: #f8fafc;
   --bg-card: #ffffff;
-  --bg-card-muted: #f1f5f9;
+  --bg-card-muted: #f0fdf4;
 
-  /* Primary Accent & Variations (Indigo) */
-  --primary-50: #eef2ff;
-  --primary-100: #e0e7ff;
-  --primary-200: #c7d2fe;
-  --primary-300: #a5b4fc;
-  --primary-400: #818cf8;
-  --primary-500: #6366f1;
-  --primary-600: #4f46e5;
-  --primary-700: #4338ca;
-  --primary-800: #3730a3;
-  --primary-900: #312e81;
+  /* Primary Accent & Variations (Institutional Green) */
+  --primary-50: #f0fdf4;
+  --primary-100: #dcfce7;
+  --primary-200: #bbf7d0;
+  --primary-300: #86efac;
+  --primary-400: #4ade80;
+  --primary-500: #10b981;
+  --primary-600: #047857;
+  --primary-700: #065f46;
+  --primary-800: #064e3b;
+  --primary-900: #022c22;
+
+  /* Institutional Academic Gold & Yellow (Secondary Accent) */
+  --gold-50: #fefce8;
+  --gold-100: #fef9c3;
+  --gold-200: #fef08a;
+  --gold-300: #fde047;
+  --gold-400: #facc15;
+  --gold-500: #eab308;
+  --gold-600: #ca8a04;
+  --gold-700: #a16207;
+  --gold-800: #854d0e;
+  --gold-900: #713f12;
 
   /* Secondary Accents (Emerald / Amber / Rose / Violet) */
   --emerald-50: #ecfdf5;
@@ -80,7 +92,8 @@
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.03);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
   --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  --shadow-primary-glow: 0 4px 14px rgba(79, 70, 229, 0.35);
+  --shadow-primary-glow: 0 4px 14px rgba(4, 120, 87, 0.38);
+  --shadow-gold-glow: 0 4px 14px rgba(234, 179, 8, 0.38);
   --shadow-emerald-glow: 0 4px 14px rgba(16, 185, 129, 0.3);
 
   /* Radii */

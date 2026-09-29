@@ -14,8 +14,8 @@
   overflow: hidden;
   border-radius: var(--radius-2xl);
   padding: 32px 36px;
-  background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 50%, #020617 100%);
-  border: 1px solid var(--border-glass);
+  background: linear-gradient(135deg, #064e3b 0%, #072118 50%, #04130d 100%);
+  border: 1px solid rgba(250, 204, 21, 0.2);
   box-shadow: var(--shadow-xl);
   color: var(--text-white);
 }
@@ -33,7 +33,7 @@
   width: 320px;
   height: 320px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.28) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.25) 0%, transparent 70%);
   filter: blur(50px);
   pointer-events: none;
 }
@@ -45,8 +45,8 @@
   width: 250px;
   height: 250px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(16, 185, 129, 0.18) 0%, transparent 70%);
-  filter: blur(60px);
+  background: radial-gradient(circle, rgba(234, 179, 8, 0.18) 0%, transparent 70%);
+  filter: blur(50px);
   pointer-events: none;
 }
 
@@ -72,9 +72,9 @@
   gap: 6px;
   padding: 4px 12px;
   border-radius: var(--radius-full);
-  background: rgba(99, 102, 241, 0.2);
-  border: 1px solid rgba(99, 102, 241, 0.4);
-  color: var(--primary-300);
+  background: rgba(234, 179, 8, 0.15);
+  border: 1px solid rgba(250, 204, 21, 0.35);
+  color: var(--gold-300);
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.05em;
@@ -145,7 +145,8 @@
 }
 
 .gpa-card--primary {
-  background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+  background: linear-gradient(135deg, #047857 0%, #064e3b 100%);
+  border: 1px solid rgba(250, 204, 21, 0.28);
 }
 
 .gpa-card--emerald {
@@ -153,7 +154,7 @@
 }
 
 .gpa-card--violet {
-  background: linear-gradient(135deg, #7c3aed 0%, #4c1d95 100%);
+  background: linear-gradient(135deg, #ca8a04 0%, #854d0e 100%);
 }
 
 .gpa-card-header {

@@ -27,14 +27,14 @@ export function LecturerDashboard({ user }: { user: UserType }) {
       {/* ── Lecturer Hero ─────────────────────────────────── */}
       <div
         style={{
-          background: 'linear-gradient(135deg, #090d16 0%, #1e1b4b 60%, #4338ca 100%)',
+          background: 'linear-gradient(135deg, #064e3b 0%, #072118 60%, #04130d 100%)',
           borderRadius: 20,
           padding: '28px 32px',
           color: '#ffffff',
           position: 'relative',
           overflow: 'hidden',
-          boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.3)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
+          boxShadow: '0 10px 25px -5px rgba(4, 19, 13, 0.3)',
+          border: '1px solid rgba(250, 204, 21, 0.25)',
         }}
       >
         <div

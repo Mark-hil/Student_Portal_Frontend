@@ -111,14 +111,14 @@ export function FinanceDashboard({ user, onNav }: Props) {
       {/* ── Finance Executive Hero Header ── */}
       <div
         style={{
-          background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 60%, #172554 100%)',
+          background: 'linear-gradient(135deg, #064e3b 0%, #072118 60%, #04130d 100%)',
           borderRadius: 20,
           padding: '28px 32px',
           color: '#ffffff',
           position: 'relative',
           overflow: 'hidden',
-          boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.4)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 10px 25px -5px rgba(4, 19, 13, 0.4)',
+          border: '1px solid rgba(250, 204, 21, 0.25)',
         }}
       >
         <div
@@ -266,7 +266,7 @@ export function FinanceDashboard({ user, onNav }: Props) {
         <div className="fin-stat-card">
           <div className="fin-stat-header">
             <span className="fin-stat-label">TOTAL TUITION BILLED</span>
-            <span className="fin-badge fin-badge-blue">University Ledger</span>
+            <span className="fin-badge fin-badge-green">University Ledger</span>
           </div>
           <div className="fin-stat-val indigo">
             GH₵ {totalBilled.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -377,16 +377,16 @@ export function FinanceDashboard({ user, onNav }: Props) {
           <div className="fin-card-header">
             <div>
               <h3 className="fin-card-title">
-                <Building2 size={20} color="#2563eb" />
+                <Building2 size={20} color="#047857" />
                 Partner Bank Collect Channels
               </h3>
               <div className="fin-card-sub">GCB, Ecobank, Zenith, CalBank Automated Teller API Sync</div>
             </div>
-            <span className="fin-badge fin-badge-blue">Direct Bank Webhook</span>
+            <span className="fin-badge fin-badge-gold">Direct Bank Webhook</span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, margin: '14px 0 8px 0' }}>
-            <span style={{ fontSize: 26, fontWeight: 900, color: '#2563eb' }}>
+            <span style={{ fontSize: 26, fontWeight: 900, color: '#047857' }}>
               GH₵ {Number(metrics.bank_total || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </span>
             <span style={{ fontSize: 12, color: '#64748b' }}>
@@ -580,7 +580,7 @@ export function FinanceDashboard({ user, onNav }: Props) {
                       </td>
                       <td>
                         <span
-                          className={`fin-badge ${isMoMo ? 'fin-badge-amber' : isBank ? 'fin-badge-blue' : 'fin-badge-violet'}`}
+                          className={`fin-badge ${isMoMo ? 'fin-badge-amber' : isBank ? 'fin-badge-green' : 'fin-badge-violet'}`}
                           style={{ fontSize: 11 }}
                         >
                           {p.provider || p.channel}
@@ -647,7 +647,7 @@ export function FinanceDashboard({ user, onNav }: Props) {
           }}
           className="fin-card"
         >
-          <div style={{ width: 44, height: 44, borderRadius: 10, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb' }}>
+          <div style={{ width: 44, height: 44, borderRadius: 10, background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#047857' }}>
             <Settings size={22} />
           </div>
           <div>

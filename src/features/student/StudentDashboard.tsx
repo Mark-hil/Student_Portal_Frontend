@@ -9,7 +9,7 @@ import { ProgressBar } from '../../components/ui/ProgressBar';
 import { SectionHead } from '../../components/ui/SectionHead';
 import { Empty } from '../../components/ui/Empty';
 
-const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4'];
+const COLORS = ['#047857', '#eab308', '#10b981', '#f59e0b', '#065f46', '#facc15'];
 
 export function StudentDashboard({ user, onNav }: { user: UserType; onNav: (v: string) => void }) {
   const { data: gpa } = useQuery({

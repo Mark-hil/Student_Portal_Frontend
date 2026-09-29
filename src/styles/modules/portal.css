@@ -63,9 +63,10 @@
 }
 
 .sidebar-nav-item.active {
-  background: var(--primary-600);
+  background: var(--primary-700);
   color: var(--text-white);
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+  box-shadow: 0 4px 12px rgba(4, 120, 87, 0.35);
+  border-left: 3px solid var(--gold-400);
 }
 
 /* Main Content Area */
@@ -122,13 +123,14 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary-500) 0%, var(--violet-500) 100%);
+  background: linear-gradient(135deg, var(--primary-600) 0%, var(--gold-500) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--text-white);
   font-size: 0.8125rem;
   font-weight: 700;
+  box-shadow: 0 2px 8px rgba(4, 120, 87, 0.25);
 }
 
 /* Bottom Nav Thumb Bar for Mobile */

@@ -254,7 +254,7 @@ export function MobileDrawer({
           width: typeof width === 'number' ? `${width}px` : width,
           maxWidth: '85vw',
           height: '100%',
-          background: '#090d16',
+          background: '#04130d',
           boxShadow: '4px 0 24px rgba(0, 0, 0, 0.4)',
           display: 'flex',
           flexDirection: 'column',

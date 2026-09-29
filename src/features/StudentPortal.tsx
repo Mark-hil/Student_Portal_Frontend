@@ -14,7 +14,6 @@ import { C } from '../utils/theme';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { useBreakpoint } from '../hooks/useBreakpoint';
 import { MobileDrawer } from '../components/ui/Responsive';
-import { Toaster } from 'react-hot-toast';
 import { notificationsApi, authApi } from '../api/services';
 import type { User as UserType } from '../types';
 
@@ -224,7 +223,7 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
     : isSuperAdmin
     ? '#e11d48'
     : isAcademicOfficer
-    ? '#6366f1'
+    ? '#059669'
     : isDepartmentalHead
     ? '#9333ea'
     : isLecturer
@@ -233,27 +232,28 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
 
   // Sidebar content (shared between desktop sidebar and mobile drawer)
   const sidebarContent = (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#090d16', color: '#fff' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#04130d', color: '#fff' }}>
       {/* Brand Header */}
       <div style={{ padding: '22px 20px 18px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <div
             style={{
-              background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+              background: 'linear-gradient(135deg, #047857 0%, #064e3b 100%)',
               borderRadius: 14,
               width: 40,
               height: 40,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 4px 14px rgba(79, 70, 229, 0.4)',
+              border: '1.5px solid rgba(250, 204, 21, 0.45)',
+              boxShadow: '0 4px 14px rgba(4, 120, 87, 0.45)',
             }}
           >
-            <GraduationCap size={22} color="#fff" />
+            <GraduationCap size={22} color="#facc15" />
           </div>
           <div>
-            <div style={{ fontSize: 17, fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>
-              UniPortal
+            <div style={{ fontSize: 17, fontWeight: 800, color: '#fff', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 6 }}>
+              ASDAM <span style={{ color: '#facc15', fontSize: 12, fontWeight: 700, padding: '1px 5px', borderRadius: 4, background: 'rgba(250, 204, 21, 0.15)', border: '1px solid rgba(250, 204, 21, 0.3)' }}>Portal</span>
             </div>
             <div style={{ fontSize: 11, color: roleColor, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: 1 }}>
               {roleLabel}
@@ -301,7 +301,7 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
             width: 38,
             height: 38,
             borderRadius: 12,
-            background: 'linear-gradient(135deg, #4f46e5, #06b6d4)',
+            background: 'linear-gradient(135deg, #047857, #eab308)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -309,6 +309,7 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
             fontWeight: 800,
             color: '#fff',
             flexShrink: 0,
+            border: '1px solid rgba(250, 204, 21, 0.4)',
             boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
           }}
         >
@@ -344,8 +345,8 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
                 borderRadius: 11,
                 border: 'none',
                 cursor: 'pointer',
-                background: active ? 'linear-gradient(90deg, rgba(79, 70, 229, 0.22) 0%, rgba(79, 70, 229, 0.06) 100%)' : 'transparent',
-                color: active ? '#c7d2fe' : 'rgba(255,255,255,0.55)',
+                background: active ? 'linear-gradient(90deg, rgba(4, 120, 87, 0.35) 0%, rgba(4, 120, 87, 0.12) 100%)' : 'transparent',
+                color: active ? '#facc15' : 'rgba(255,255,255,0.65)',
                 fontSize: 13.5,
                 fontWeight: active ? 700 : 500,
                 marginBottom: 4,
@@ -361,7 +362,7 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
               onMouseLeave={e => {
                 if (!active) {
                   e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.color = 'rgba(255,255,255,0.55)';
+                  e.currentTarget.style.color = 'rgba(255,255,255,0.65)';
                 }
               }}
             >
@@ -374,12 +375,12 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
                     bottom: '15%',
                     width: 3.5,
                     borderRadius: '0 4px 4px 0',
-                    background: '#6366f1',
-                    boxShadow: '0 0 10px #6366f1',
+                    background: '#facc15',
+                    boxShadow: '0 0 10px rgba(250, 204, 21, 0.6)',
                   }}
                 />
               )}
-              <Icon size={18} color={active ? '#818cf8' : 'currentColor'} />
+              <Icon size={18} color={active ? '#facc15' : 'currentColor'} />
               <span style={{ flex: 1, textAlign: 'left' }}>{label}</span>
               {id === 'notifications' && unread > 0 && (
                 <span
@@ -475,11 +476,10 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
         button, input, select, textarea { font-family: inherit; }
       `}</style>
       <div style={{ display: 'flex', height: '100vh', fontFamily: "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif", fontSize: 14.5, background: '#f8fafc', overflow: 'hidden' }}>
-        <Toaster position="top-right" />
 
         {/* ── Desktop Sidebar ────────────────────────────────── */}
         {isDesktop && (
-          <aside style={{ width: 264, background: '#090d16', display: 'flex', flexDirection: 'column', flexShrink: 0, borderRight: '1px solid rgba(255,255,255,0.07)' }}>
+          <aside style={{ width: 264, background: '#04130d', display: 'flex', flexDirection: 'column', flexShrink: 0, borderRight: '1px solid rgba(255,255,255,0.07)' }}>
             {sidebarContent}
           </aside>
         )}
@@ -664,13 +664,14 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
                   width: 28,
                   height: 28,
                   borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #4f46e5, #06b6d4)',
+                  background: 'linear-gradient(135deg, #047857, #eab308)',
                   color: '#fff',
                   fontSize: 11,
                   fontWeight: 800,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  border: '1px solid rgba(250, 204, 21, 0.4)',
                 }}
               >
                 {initials}

@@ -193,7 +193,7 @@ export function StudentRegistrationOnboarding({ user, onComplete, onLogout }: Pr
       style={{
         minHeight: '100vh',
         width: '100%',
-        background: 'radial-gradient(ellipse at top, #1e1b4b 0%, #090d16 100%)',
+        background: 'radial-gradient(ellipse at top, #064e3b 0%, #04130d 100%)',
         fontFamily: "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif",
         display: 'flex',
         flexDirection: 'column',
@@ -221,20 +221,21 @@ export function StudentRegistrationOnboarding({ user, onComplete, onLogout }: Pr
               width: 44,
               height: 44,
               borderRadius: 14,
-              background: 'linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%)',
+              background: 'linear-gradient(135deg, #047857 0%, #064e3b 100%)',
+              border: '1.5px solid rgba(250, 204, 21, 0.45)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 4px 16px rgba(79, 70, 229, 0.4)',
+              boxShadow: '0 4px 16px rgba(4, 120, 87, 0.45)',
             }}
           >
-            <GraduationCap size={24} color="#fff" />
+            <GraduationCap size={24} color="#facc15" />
           </div>
           <div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>
-              ASDAM Student Portal
+            <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 6 }}>
+              ASDAM <span style={{ color: '#facc15', fontSize: 13, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: 'rgba(250, 204, 21, 0.15)', border: '1px solid rgba(250, 204, 21, 0.3)' }}>Student Portal</span>
             </div>
-            <div style={{ fontSize: 12, color: '#a5b4fc', fontWeight: 600 }}>
+            <div style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.7)', fontWeight: 600 }}>
               Arch-Bishop Porter College of Health & Allied Sciences
             </div>
           </div>
@@ -426,13 +427,13 @@ export function StudentRegistrationOnboarding({ user, onComplete, onLogout }: Pr
                     padding: '10px 14px',
                     borderRadius: 12,
                     background: active
-                      ? 'linear-gradient(135deg, rgba(79, 70, 229, 0.25) 0%, rgba(99, 102, 241, 0.1) 100%)'
+                      ? 'linear-gradient(135deg, rgba(250, 204, 21, 0.22) 0%, rgba(4, 120, 87, 0.18) 100%)'
                       : passed
                       ? 'rgba(16, 185, 129, 0.08)'
                       : 'rgba(255, 255, 255, 0.03)',
                     border: `1.5px solid ${
                       active
-                        ? '#6366f1'
+                        ? '#facc15'
                         : passed
                         ? 'rgba(16, 185, 129, 0.3)'
                         : 'rgba(255, 255, 255, 0.06)'
@@ -447,11 +448,11 @@ export function StudentRegistrationOnboarding({ user, onComplete, onLogout }: Pr
                       height: 28,
                       borderRadius: '50%',
                       background: active
-                        ? '#4f46e5'
+                        ? '#facc15'
                         : passed
                         ? '#10b981'
                         : 'rgba(255, 255, 255, 0.1)',
-                      color: '#fff',
+                      color: active ? '#04130d' : '#fff',
                       fontSize: 12,
                       fontWeight: 800,
                       display: 'flex',
@@ -481,7 +482,7 @@ export function StudentRegistrationOnboarding({ user, onComplete, onLogout }: Pr
               style={{
                 height: '100%',
                 width: `${stepProgress}%`,
-                background: 'linear-gradient(90deg, #4f46e5 0%, #06b6d4 100%)',
+                background: 'linear-gradient(90deg, #047857 0%, #eab308 100%)',
                 transition: 'width 0.3s ease',
               }}
             />
@@ -967,13 +968,13 @@ export function StudentRegistrationOnboarding({ user, onComplete, onLogout }: Pr
                   gap: 8,
                   padding: '13px 26px',
                   borderRadius: 12,
-                  background: 'linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)',
-                  border: 'none',
+                  background: 'linear-gradient(135deg, #047857 0%, #064e3b 100%)',
+                  border: '1px solid rgba(250, 204, 21, 0.3)',
                   color: '#ffffff',
                   fontSize: 14,
                   fontWeight: 700,
                   cursor: 'pointer',
-                  boxShadow: '0 4px 14px rgba(79, 70, 229, 0.4)',
+                  boxShadow: '0 4px 14px rgba(4, 120, 87, 0.4)',
                 }}
               >
                 Next Step <ArrowRight size={16} />

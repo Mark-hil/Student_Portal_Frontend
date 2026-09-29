@@ -21,20 +21,20 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
       alignItems: 'center',
       justifyContent: 'space-between',
       padding: '12px 18px',
-      background: '#eff6ff',
-      border: '1px solid #bfdbfe',
+      background: '#f0fdf4',
+      border: '1px solid #bbf7d0',
       borderRadius: 14,
       flexWrap: 'wrap',
       gap: 12,
-      boxShadow: '0 2px 8px rgba(37,99,235,0.08)'
+      boxShadow: '0 2px 8px rgba(4,120,87,0.08)'
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{
           width: 28,
           height: 28,
           borderRadius: 8,
-          background: '#dbeafe',
-          color: '#1d4ed8',
+          background: '#dcfce7',
+          color: '#047857',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center'
@@ -42,10 +42,10 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
           <CheckSquare size={16} />
         </div>
         <div>
-          <span style={{ fontSize: 13.5, fontWeight: 800, color: '#1e40af' }}>
+          <span style={{ fontSize: 13.5, fontWeight: 800, color: '#065f46' }}>
             {selectedCount} student{selectedCount > 1 ? 's' : ''} selected
           </span>
-          <span style={{ fontSize: 12, color: '#3b82f6', marginLeft: 8 }}>
+          <span style={{ fontSize: 12, color: '#047857', marginLeft: 8 }}>
             Ready for cohort progression
           </span>
         </div>
@@ -59,14 +59,14 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
             alignItems: 'center',
             gap: 6,
             padding: '8px 16px',
-            background: C.indigo,
+            background: C.primary,
             color: '#fff',
             border: 'none',
             borderRadius: 10,
             fontSize: 13,
             fontWeight: 700,
             cursor: 'pointer',
-            boxShadow: '0 2px 6px rgba(79,70,229,0.25)'
+            boxShadow: '0 2px 6px rgba(4,120,87,0.25)'
           }}
         >
           <GraduationCap size={15} /> Promote Cohort

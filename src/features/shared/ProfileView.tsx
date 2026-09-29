@@ -173,10 +173,10 @@ export function ProfileView({ user, onUserUpdate, onNav }: Props) {
 
   // Theming based on role
   const roleTheme = isStudent
-    ? { gradient: `linear-gradient(135deg, ${C.navy}, #1e1b4b)`, accent: C.indigo, label: 'Undergraduate Student', badgeBg: 'rgba(99, 102, 241, 0.25)', badgeText: '#c7d2fe' }
+    ? { gradient: `linear-gradient(135deg, #064e3b, #04130d)`, accent: '#047857', label: 'Undergraduate Student', badgeBg: 'rgba(250, 204, 21, 0.2)', badgeText: '#facc15' }
     : isLecturer
-    ? { gradient: 'linear-gradient(135deg, #064e3b, #0f172a)', accent: C.emerald, label: 'Faculty & Lecturer', badgeBg: 'rgba(160, 240, 200, 0.25)', badgeText: '#a7f3d0' }
-    : { gradient: 'linear-gradient(135deg, #4c1d95, #0f172a)', accent: C.purple, label: 'Academic Officer & Administrator', badgeBg: 'rgba(168, 85, 247, 0.25)', badgeText: '#e9d5ff' };
+    ? { gradient: 'linear-gradient(135deg, #064e3b, #072118)', accent: C.emerald, label: 'Faculty & Lecturer', badgeBg: 'rgba(16, 185, 129, 0.25)', badgeText: '#a7f3d0' }
+    : { gradient: 'linear-gradient(135deg, #064e3b, #04130d)', accent: '#eab308', label: 'Academic Officer & Administrator', badgeBg: 'rgba(250, 204, 21, 0.25)', badgeText: '#facc15' };
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>

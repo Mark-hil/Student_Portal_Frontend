@@ -32,14 +32,14 @@ export function AdminDashboard({ user, onNav }: { user: UserType; onNav?: (view:
       {/* ── Admin Hero Header ─────────────────────────────── */}
       <div
         style={{
-          background: 'linear-gradient(135deg, #090d16 0%, #1e293b 60%, #0f172a 100%)',
+          background: 'linear-gradient(135deg, #064e3b 0%, #072118 60%, #04130d 100%)',
           borderRadius: 20,
           padding: '28px 32px',
           color: '#ffffff',
           position: 'relative',
           overflow: 'hidden',
-          boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.3)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
+          boxShadow: '0 10px 25px -5px rgba(4, 19, 13, 0.3)',
+          border: '1px solid rgba(250, 204, 21, 0.25)',
         }}
       >
         <div
@@ -102,10 +102,10 @@ export function AdminDashboard({ user, onNav }: { user: UserType; onNav?: (view:
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
           {[
-            { l: 'Total Students', v: stats?.total_students ?? 0, s: 'Active campus accounts', a: '#4f46e5', bg: '#eef2ff', icon: Users },
-            { l: 'Faculty Instructors', v: stats?.total_instructors ?? 0, s: 'Teaching staff', a: '#10b981', bg: '#ecfdf5', icon: Users },
-            { l: 'Active Courses', v: stats?.total_courses ?? 0, s: 'Curriculum catalog', a: '#f59e0b', bg: '#fffbeb', icon: BookOpen },
-            { l: 'Pending Batches', v: stats?.pending_batches ?? 0, s: 'Awaiting grade review', a: '#f43f5e', bg: '#fff1f2', icon: ClipboardCheck },
+            { l: 'Total Students', v: stats?.total_students ?? 0, s: 'Active campus accounts', a: '#047857', bg: '#f0fdf4', icon: Users },
+            { l: 'Faculty Instructors', v: stats?.total_instructors ?? 0, s: 'Teaching staff', a: '#059669', bg: '#ecfdf5', icon: Users },
+            { l: 'Active Courses', v: stats?.total_courses ?? 0, s: 'Curriculum catalog', a: '#d97706', bg: '#fffbeb', icon: BookOpen },
+            { l: 'Pending Batches', v: stats?.pending_batches ?? 0, s: 'Awaiting grade review', a: '#dc2626', bg: '#fef2f2', icon: ClipboardCheck },
           ].map(({ l, v, s, a, bg, icon: Icon }) => (
             <Card key={l} style={{ padding: '16px 18px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
               <div
@@ -136,8 +136,8 @@ export function AdminDashboard({ user, onNav }: { user: UserType; onNav?: (view:
         <Card style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ background: '#eef2ff', borderRadius: 10, padding: 8, border: '1px solid #c7d2fe' }}>
-                <ShieldCheck size={18} color="#4f46e5" />
+              <div style={{ background: '#f0fdf4', borderRadius: 10, padding: 8, border: '1px solid #bbf7d0' }}>
+                <ShieldCheck size={18} color="#047857" />
               </div>
               <div>
                 <div style={{ fontSize: 15, fontWeight: 700, color: C.slate9 }}>
@@ -155,7 +155,7 @@ export function AdminDashboard({ user, onNav }: { user: UserType; onNav?: (view:
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: '#4f46e5',
+                  color: '#047857',
                   fontSize: 12.5,
                   fontWeight: 700,
                   cursor: 'pointer',

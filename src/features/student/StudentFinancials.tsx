@@ -208,7 +208,7 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
   if (loading && !statement) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, color: '#94a3b8' }}>
-        <RefreshCw size={32} className="animate-spin" color="#4f46e5" style={{ marginBottom: 12 }} />
+        <RefreshCw size={32} className="animate-spin" color="#047857" style={{ marginBottom: 12 }} />
         <p style={{ fontSize: 14 }}>Loading financial statements and fee billing...</p>
       </div>
     );
@@ -344,7 +344,7 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
         <div className="fin-stat-card">
           <div className="fin-stat-header">
             <span className="fin-stat-label">TOTAL BILLED (LEVEL {statement?.academic_level || '100'})</span>
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#6366f1' }}>Dynamic Schedule</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#047857' }}>Dynamic Schedule</span>
           </div>
           <div className="fin-stat-val indigo">
             GH₵ {totalBilledNum.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -396,14 +396,14 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
           <div className="fin-card-header">
             <div>
               <h2 className="fin-card-title">
-                <Receipt size={20} color="#4f46e5" />
+                <Receipt size={20} color="#047857" />
                 Level {statement?.academic_level || '100'} Fee Breakdown
               </h2>
               <div className="fin-card-sub">
                 Flat university schedule for Level {statement?.academic_level || '100'} approved dynamically by the Finance Directorate
               </div>
             </div>
-            <span style={{ fontSize: 12, fontWeight: 700, padding: '4px 10px', background: '#eef2ff', color: '#4338ca', borderRadius: 8 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, padding: '4px 10px', background: '#f0fdf4', color: '#047857', borderRadius: 8 }}>
               Ghana Cedis (GH₵)
             </span>
           </div>
@@ -463,7 +463,7 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
 
             <div className="fin-fee-total-row">
               <span style={{ fontSize: 15, fontWeight: 800, color: '#0f172a' }}>Total Semester Fees Payable</span>
-              <span style={{ fontSize: 20, fontWeight: 900, color: '#4f46e5' }}>
+              <span style={{ fontSize: 20, fontWeight: 900, color: '#047857' }}>
                 GH₵ {totalBilledNum.toLocaleString('en-US', { minimumFractionDigits: 2 })}
               </span>
             </div>
@@ -495,7 +495,7 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
 
             <div className="fin-channel-box">
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#2563eb' }} />
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#047857' }} />
                 2. Partner Bank Direct Collect
               </div>
               <p style={{ margin: '4px 0 0', fontSize: 12, color: '#64748b', lineHeight: 1.4 }}>
@@ -591,7 +591,7 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
                   const isCompleted = p.status === 'completed';
                   return (
                     <tr key={p.id}>
-                      <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#4f46e5' }}>
+                      <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#047857' }}>
                         {p.receipt_number}
                       </td>
                       <td style={{ color: '#475569', fontSize: 12 }}>
@@ -606,7 +606,7 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
                           {p.channel === 'momo' ? (
                             <Smartphone size={16} color="#d97706" />
                           ) : (
-                            <Building2 size={16} color="#2563eb" />
+                            <Building2 size={16} color="#047857" />
                           )}
                           <span>{p.provider}</span>
                         </div>
@@ -666,7 +666,7 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
             <div className="fin-modal-header">
               <div>
                 <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <CreditCard size={20} color="#4f46e5" />
+                  <CreditCard size={20} color="#047857" />
                   Settle Semester Fees
                 </h3>
                 <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
@@ -865,7 +865,7 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
                         Please enter your <strong>{momoProvider}</strong> PIN on your phone (<strong>{momoPhone}</strong>) to authorize the payment of{' '}
                         <strong>GH₵ {Number(momoAmount).toFixed(2)}</strong>.
                       </p>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: '#4f46e5', fontSize: 12, fontWeight: 700, marginTop: 16 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: '#047857', fontSize: 12, fontWeight: 700, marginTop: 16 }}>
                         <RefreshCw size={16} className="animate-spin" />
                         Listening for Telco Webhook confirmation...
                       </div>
@@ -895,7 +895,7 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
                         Payment Verified Successfully!
                       </h4>
                       <p style={{ margin: '6px 0', fontSize: 13, color: '#64748b' }}>
-                        Receipt Number: <strong style={{ color: '#4f46e5', fontFamily: 'monospace' }}>{lastPayment.receipt_number}</strong>
+                        Receipt Number: <strong style={{ color: '#047857', fontFamily: 'monospace' }}>{lastPayment.receipt_number}</strong>
                       </p>
                       <div style={{ fontSize: 14, fontWeight: 800, color: '#059669', marginBottom: 20 }}>
                         GH₵ {Number(lastPayment.amount).toFixed(2)} Credited to Student Ledger
@@ -927,11 +927,11 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
               {/* TAB 2: Bank Direct Branch Collect */}
               {payTab === 'bank_advice' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  <div style={{ padding: 14, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#1e40af', marginBottom: 4 }}>
+                  <div style={{ padding: 14, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#065f46', marginBottom: 4 }}>
                       Walk-in Bank Branch Collect
                     </div>
-                    <p style={{ margin: 0, fontSize: 12, color: '#1e3a8a', lineHeight: 1.4 }}>
+                    <p style={{ margin: 0, fontSize: 12, color: '#064e3b', lineHeight: 1.4 }}>
                       Visit any nationwide branch of <strong>GCB Bank, Ecobank Ghana, Zenith Bank, CalBank, or Stanbic Bank</strong>.
                       Present your Student Index Number below to the teller. The bank system queries your balance and posts payments in real time.
                     </p>
@@ -941,7 +941,7 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
                   <div style={{ border: '1px solid #cbd5e1', borderRadius: 14, padding: 16, background: '#f8fafc', fontFamily: 'monospace' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: 8, marginBottom: 12 }}>
                       <span style={{ fontSize: 11, fontWeight: 800, color: '#64748b' }}>BANK ADVICE VOUCHER</span>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: '#4f46e5' }}>{statement?.semester}</span>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: '#047857' }}>{statement?.semester}</span>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 12 }}>
@@ -1016,7 +1016,7 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
                       disabled={simulatingDeposit}
                       onClick={handleSimulateBankDeposit}
                       className="fin-btn-primary"
-                      style={{ width: '100%', justifyContent: 'center', background: '#2563eb' }}
+                      style={{ width: '100%', justifyContent: 'center' }}
                     >
                       <Building2 size={16} />
                       {simulatingDeposit ? 'Triggering Bank Webhook...' : `Simulate ${simBank} Cash Deposit`}

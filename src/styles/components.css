@@ -157,7 +157,7 @@
 
 .btn-primary:hover:not(:disabled) {
   background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-700) 100%);
-  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.45);
+  box-shadow: 0 6px 18px rgba(4, 120, 87, 0.45);
   transform: translateY(-1px);
 }
 
@@ -165,6 +165,20 @@
   background: var(--primary-300);
   cursor: not-allowed;
   box-shadow: none;
+}
+
+.btn-gold {
+  background: linear-gradient(135deg, var(--gold-400) 0%, var(--gold-600) 100%);
+  color: #713f12;
+  font-weight: 700;
+  box-shadow: var(--shadow-gold-glow);
+  border: 1px solid rgba(202, 138, 4, 0.3);
+}
+
+.btn-gold:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--gold-300) 0%, var(--gold-500) 100%);
+  box-shadow: 0 6px 18px rgba(234, 179, 8, 0.45);
+  transform: translateY(-1px);
 }
 
 .btn-secondary {

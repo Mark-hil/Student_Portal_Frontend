@@ -9,7 +9,7 @@ import {
   GraduationCap, Mail, Lock, User, Eye, EyeOff, AlertCircle,
   ShieldCheck, Calendar, Award, Clock, ArrowRight,
   BookOpen, Shield, Coins, KeyRound, CheckCircle2, HeartPulse, Phone,
-  Building2, ArrowLeft, Smartphone
+  Building2, ArrowLeft, Smartphone, UserCheck, HelpCircle
 } from 'lucide-react';
 import client from '../api/client';
 import { authApi } from '../api/services';
@@ -72,7 +72,7 @@ const DEMO_ACCOUNTS = [
     icon: Shield,
     color: 'var(--primary-600)',
     bg: 'var(--primary-50)',
-    border: '#c7d2fe',
+    border: 'var(--primary-200)',
   },
 ];
 
@@ -83,6 +83,12 @@ export default function LoginPage({ onSuccess }: Props) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [errorMeta, setErrorMeta] = useState<{
+    type?: 'account_not_found' | 'account_not_activated' | 'invalid_password' | 'account_inactive' | 'generic';
+    title?: string;
+    suggestActivation?: boolean;
+    suggestReset?: boolean;
+  } | null>(null);
   
   // Standard form
   const [form, setForm] = useState({
@@ -130,16 +136,27 @@ export default function LoginPage({ onSuccess }: Props) {
     return () => clearInterval(timer);
   }, [resetCountdown]);
 
-  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    if (error) {
+      setError('');
+      setErrorMeta(null);
+    }
     setForm(f => ({ ...f, [k]: e.target.value }));
+  };
 
-  const setMoh = (k: keyof typeof mohForm) => (e: React.ChangeEvent<HTMLInputElement>) =>
+  const setMoh = (k: keyof typeof mohForm) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (error) {
+      setError('');
+      setErrorMeta(null);
+    }
     setMohForm(f => ({ ...f, [k]: e.target.value }));
+  };
 
   const selectDemoAccount = (demo: typeof DEMO_ACCOUNTS[0]) => {
     setSelectedDemoRole(demo.role);
     setForm(f => ({ ...f, email: demo.email, password: 'password123' }));
     setError('');
+    setErrorMeta(null);
   };
 
   const handleVerifyMoh = async () => {
@@ -245,14 +262,74 @@ export default function LoginPage({ onSuccess }: Props) {
         onSuccess(user, tokens);
       }
     } catch (err: any) {
-      if (err.response?.data?.detail) {
-        setError(err.response.data.detail);
-      } else if (err.response?.data) {
-        const firstKey = Object.keys(err.response.data)[0];
-        const firstError = err.response.data[firstKey];
-        setError(Array.isArray(firstError) ? firstError[0] : String(firstError));
+      const data = err.response?.data;
+      let rawMsg = '';
+      if (data?.detail) {
+        rawMsg = Array.isArray(data.detail) ? data.detail[0] : String(data.detail);
+      } else if (data) {
+        const firstKey = Object.keys(data)[0];
+        const firstError = data[firstKey];
+        rawMsg = Array.isArray(firstError) ? firstError[0] : String(firstError);
       } else {
-        setError('Unable to authenticate. Please verify your credentials.');
+        rawMsg = 'Unable to authenticate. Please verify your credentials.';
+      }
+
+      const lower = rawMsg.toLowerCase();
+      const code = data?.code;
+
+      if (
+        lower.includes('no active account') ||
+        lower.includes('no account found') ||
+        code === 'account_not_found'
+      ) {
+        setError(
+          'No account was found matching the provided identifier (Student ID, Email, Phone, or MOH PIN). ' +
+          'If you are an admitted student, please activate your portal account using your MOH PIN and Serial Number.'
+        );
+        setErrorMeta({
+          type: 'account_not_found',
+          title: 'Account Not Found or Inactive',
+          suggestActivation: true,
+          suggestReset: true,
+        });
+      } else if (
+        lower.includes('not been activated') ||
+        code === 'account_not_activated' ||
+        data?.suggest_activation
+      ) {
+        setError(rawMsg);
+        setErrorMeta({
+          type: 'account_not_activated',
+          title: 'Account Activation Required',
+          suggestActivation: true,
+          suggestReset: false,
+        });
+      } else if (
+        lower.includes('incorrect password') ||
+        lower.includes('invalid password') ||
+        code === 'invalid_password'
+      ) {
+        setError(rawMsg);
+        setErrorMeta({
+          type: 'invalid_password',
+          title: 'Incorrect Password',
+          suggestActivation: false,
+          suggestReset: true,
+        });
+      } else if (
+        lower.includes('inactive or suspended') ||
+        code === 'account_inactive'
+      ) {
+        setError(rawMsg);
+        setErrorMeta({
+          type: 'account_inactive',
+          title: 'Account Suspended or Inactive',
+          suggestActivation: false,
+          suggestReset: false,
+        });
+      } else {
+        setError(rawMsg);
+        setErrorMeta(null);
       }
     } finally {
       setLoading(false);
@@ -342,36 +419,38 @@ export default function LoginPage({ onSuccess }: Props) {
             {/* Header Branding */}
             <div className="flex items-center gap-3" style={{ marginBottom: 18 }}>
               <div className="brand-crest">
-                <GraduationCap size={22} color="#ffffff" />
+                <GraduationCap size={22} color="#facc15" />
               </div>
               <div>
-                <div className="brand-title">UniPortal</div>
-                <div className="brand-subtitle">Institutional Cloud Suite</div>
+                <div className="brand-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  ASDAM <span style={{ color: '#facc15', fontSize: '0.75rem', fontWeight: 700, padding: '1px 5px', borderRadius: 4, background: 'rgba(250, 204, 21, 0.15)', border: '1px solid rgba(250, 204, 21, 0.3)' }}>Portal</span>
+                </div>
+                <div className="brand-subtitle">Health & Allied Sciences</div>
               </div>
             </div>
 
             {/* Headline & Subtitle */}
             <h1 className="showcase-heading">
-              Unified Intelligence for Higher Education
+              Academic Excellence in Health Sciences
             </h1>
             <p className="showcase-lead">
-              Access real-time schedules, interactive timetable grids, verified GPA analytics, and flexible course registration in one unified portal.
+              Access real-time clinical schedules, verified GPA analytics, MOH admission activation, and course registration in one unified portal.
             </p>
 
             {/* Live Showcase Feature Cards */}
             <div className="flex flex-col gap-2" style={{ marginBottom: 20 }}>
               <div className="feature-card">
-                <div className="feature-icon-box" style={{ background: 'rgba(99, 102, 241, 0.15)', color: 'var(--primary-400)' }}>
+                <div className="feature-icon-box" style={{ background: 'rgba(4, 120, 87, 0.2)', color: '#4ade80' }}>
                   <Calendar size={17} />
                 </div>
                 <div className="flex-1">
                   <div className="feature-title">Dynamic Visual Timetable</div>
-                  <div className="feature-desc">Auto-generated weekly schedule blocks with classroom locations & instructors</div>
+                  <div className="feature-desc">Auto-generated weekly lecture & clinical schedule blocks with venues</div>
                 </div>
               </div>
 
               <div className="feature-card">
-                <div className="feature-icon-box" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399' }}>
+                <div className="feature-icon-box" style={{ background: 'rgba(234, 179, 8, 0.2)', color: '#facc15' }}>
                   <Award size={17} />
                 </div>
                 <div className="flex-1">
@@ -407,14 +486,14 @@ export default function LoginPage({ onSuccess }: Props) {
                 ? 'Sign in to your account'
                 : mode === 'forgot_password'
                 ? 'Reset your password'
-                : 'Create an Account'}
+                : 'Account Activation & Onboarding'}
             </h2>
             <p className="auth-header-sub">
               {mode === 'login'
                 ? 'Select a portal role or enter your credentials below'
                 : mode === 'forgot_password'
                 ? 'Recover access to your student or institutional portal account'
-                : 'Enter your institutional details to register'}
+                : 'Activate your admitted student profile or review staff onboarding'}
             </p>
           </div>
 
@@ -467,10 +546,10 @@ export default function LoginPage({ onSuccess }: Props) {
             <div style={{ display: 'flex', gap: 6, marginBottom: 12, padding: '3px', background: 'var(--slate-100)', borderRadius: 'var(--radius-md)' }}>
               <button
                 type="button"
-                onClick={() => { setRegisterType('moh'); setError(''); }}
+                onClick={() => { setRegisterType('moh'); setError(''); setErrorMeta(null); }}
                 style={{
                   flex: 1,
-                  padding: '6px 10px',
+                  padding: '7px 10px',
                   borderRadius: 'var(--radius-sm)',
                   border: 'none',
                   background: registerType === 'moh' ? '#ffffff' : 'transparent',
@@ -482,18 +561,18 @@ export default function LoginPage({ onSuccess }: Props) {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: 5,
+                  gap: 6,
                 }}
               >
-                <HeartPulse size={13} color="var(--emerald-600)" />
-                MOH Student Activation
+                <HeartPulse size={14} color="var(--emerald-600)" />
+                Admitted Student Activation
               </button>
               <button
                 type="button"
-                onClick={() => { setRegisterType('custom'); setError(''); }}
+                onClick={() => { setRegisterType('custom'); setError(''); setErrorMeta(null); }}
                 style={{
                   flex: 1,
-                  padding: '6px 10px',
+                  padding: '7px 10px',
                   borderRadius: 'var(--radius-sm)',
                   border: 'none',
                   background: registerType === 'custom' ? '#ffffff' : 'transparent',
@@ -502,9 +581,14 @@ export default function LoginPage({ onSuccess }: Props) {
                   fontSize: '0.75rem',
                   cursor: 'pointer',
                   boxShadow: registerType === 'custom' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
                 }}
               >
-                Faculty / Other
+                <Building2 size={14} color="var(--slate-600)" />
+                Faculty & Staff Access
               </button>
             </div>
           )}
@@ -579,11 +663,97 @@ export default function LoginPage({ onSuccess }: Props) {
             </div>
           )}
 
-          {/* Error Notice */}
+          {/* Error Notice with Contextual Action Guides */}
           {error && (
-            <div className="flex items-center gap-2 badge-danger" style={{ padding: '9px 12px', borderRadius: 'var(--radius-md)', marginBottom: 12 }}>
-              <AlertCircle size={15} color="var(--rose-500)" className="shrink-0" />
-              <span style={{ fontSize: '0.78125rem', fontWeight: 600 }}>{error}</span>
+            <div
+              style={{
+                padding: '12px 14px',
+                borderRadius: 'var(--radius-md)',
+                marginBottom: 14,
+                background: '#fef2f2',
+                border: '1px solid #fecaca',
+                color: '#991b1b',
+              }}
+            >
+              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                <AlertCircle size={17} color="#ef4444" className="shrink-0" style={{ marginTop: 2 }} />
+                <div style={{ flex: 1 }}>
+                  {errorMeta?.title && (
+                    <div style={{ fontWeight: 700, fontSize: '0.8125rem', color: '#991b1b', marginBottom: 3 }}>
+                      {errorMeta.title}
+                    </div>
+                  )}
+                  <div style={{ fontSize: '0.78125rem', color: '#b91c1c', lineHeight: 1.45 }}>
+                    {error}
+                  </div>
+
+                  {(errorMeta?.suggestActivation || errorMeta?.suggestReset) && (
+                    <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      {errorMeta?.suggestActivation && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setError('');
+                            setErrorMeta(null);
+                            setMode('register');
+                            setRegisterType('moh');
+                            if (form.email && form.email.toUpperCase().startsWith('MOH-')) {
+                              setMohForm(prev => ({ ...prev, moh_pin: form.email.toUpperCase() }));
+                            }
+                          }}
+                          style={{
+                            background: '#dc2626',
+                            color: '#ffffff',
+                            border: 'none',
+                            borderRadius: '6px',
+                            padding: '6px 12px',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                          }}
+                        >
+                          <UserCheck size={14} />
+                          Activate Student Account
+                        </button>
+                      )}
+                      {errorMeta?.suggestReset && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setError('');
+                            setErrorMeta(null);
+                            setMode('forgot_password');
+                            setResetStep(1);
+                            if (form.email && !form.email.includes('@uniportal.edu')) {
+                              setResetIdentifier(form.email);
+                            }
+                          }}
+                          style={{
+                            background: '#ffffff',
+                            color: '#b91c1c',
+                            border: '1px solid #fca5a5',
+                            borderRadius: '6px',
+                            padding: '6px 12px',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                          }}
+                        >
+                          <KeyRound size={14} />
+                          Reset Password / PIN
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
@@ -593,12 +763,12 @@ export default function LoginPage({ onSuccess }: Props) {
               {resetStep === 1 ? (
                 /* Step 1: Request Code */
                 <form onSubmit={handleRequestReset} className="flex flex-col gap-3">
-                  <div style={{ background: 'rgba(59, 130, 246, 0.08)', padding: '10px 12px', borderRadius: 'var(--radius-md)', border: '1px solid #bfdbfe' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#1e40af', fontWeight: 700, fontSize: '0.8125rem' }}>
-                      <KeyRound size={15} color="#2563eb" />
+                  <div style={{ background: 'rgba(4, 120, 87, 0.08)', padding: '10px 12px', borderRadius: 'var(--radius-md)', border: '1px solid #bbf7d0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#065f46', fontWeight: 700, fontSize: '0.8125rem' }}>
+                      <KeyRound size={15} color="#047857" />
                       Account Self-Service Recovery
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: '#1d4ed8', marginTop: 3, lineHeight: 1.4 }}>
+                    <div style={{ fontSize: '0.75rem', color: '#047857', marginTop: 3, lineHeight: 1.4 }}>
                       Enter your official Student ID (e.g. ASDAM/NUR/26/001), Registered Email, Phone Number, or MOH PIN to receive an OTP verification code.
                     </div>
                   </div>
@@ -1211,138 +1381,115 @@ export default function LoginPage({ onSuccess }: Props) {
               )}
             </div>
           ) : (
-            /* Custom / Faculty registration */
-            <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-              <div className="grid grid-cols-2 gap-2">
-                <div className="form-group">
-                  <label className="form-label">First Name</label>
-                  <div className="input-wrap">
-                    <User size={15} className="input-icon" />
-                    <input
-                      className="form-input has-icon"
-                      value={form.first_name}
-                      onChange={set('first_name')}
-                      required
-                      placeholder="e.g. John"
-                    />
-                  </div>
+            /* Institutional Faculty & Staff Onboarding Guide */
+            <div className="flex flex-col gap-3">
+              <div style={{
+                background: 'rgba(4, 120, 87, 0.06)',
+                border: '1px solid #bbf7d0',
+                borderRadius: 'var(--radius-md)',
+                padding: '14px 16px',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7, color: '#065f46', fontWeight: 700, fontSize: '0.84375rem', marginBottom: 6 }}>
+                  <ShieldCheck size={17} color="#047857" />
+                  Official Institutional Staff Provisioning
+                </div>
+                <div style={{ fontSize: '0.78125rem', color: '#064e3b', lineHeight: 1.5, marginBottom: 12 }}>
+                  To maintain strict institutional security and FERPA/data protection standards, <strong>faculty, departmental instructors, and administrative staff accounts cannot be registered publicly</strong>. All staff profiles are vetted and provisioned directly by the Academic Affairs Directorate and Human Resources.
                 </div>
 
-                <div className="form-group">
-                  <label className="form-label">Last Name</label>
-                  <div className="input-wrap">
-                    <User size={15} className="input-icon" />
-                    <input
-                      className="form-input has-icon"
-                      value={form.last_name}
-                      onChange={set('last_name')}
-                      required
-                      placeholder="e.g. Doe"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Institutional Email</label>
-                <div className="input-wrap">
-                  <Mail size={15} className="input-icon" />
-                  <input
-                    type="email"
-                    className="form-input has-icon"
-                    value={form.email}
-                    onChange={e => {
-                      setSelectedDemoRole(null);
-                      set('email')(e);
-                    }}
-                    required
-                    placeholder="name@uniportal.edu"
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Password</label>
-                <div className="input-wrap">
-                  <Lock size={15} className="input-icon" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    className="form-input has-icon"
-                    value={form.password}
-                    onChange={set('password')}
-                    required
-                    minLength={8}
-                    placeholder="Enter your password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    style={{
-                      position: 'absolute',
-                      right: 8,
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      color: 'var(--slate-400)',
+                <div style={{
+                  background: '#ffffff',
+                  borderRadius: 'var(--radius-sm)',
+                  border: '1px solid #e2e8f0',
+                  padding: '10px 12px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 8,
+                  fontSize: '0.75rem',
+                  color: 'var(--slate-700)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                    <span style={{
+                      background: '#dcfce7',
+                      color: '#047857',
+                      borderRadius: '999px',
+                      width: 18,
+                      height: 18,
                       display: 'flex',
-                      padding: 4,
-                    }}
-                  >
-                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Confirm Password</label>
-                <div className="input-wrap">
-                  <Lock size={15} className="input-icon" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    className="form-input has-icon"
-                    value={form.confirm_password}
-                    onChange={set('confirm_password')}
-                    required
-                    minLength={8}
-                    placeholder="Re-enter your password"
-                  />
-                </div>
-                {form.password && form.confirm_password && (
-                  <div style={{
-                    fontSize: '0.75rem',
-                    marginTop: 4,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 4,
-                    color: form.password === form.confirm_password ? '#16a34a' : '#dc2626',
-                    fontWeight: 600,
-                  }}>
-                    {form.password === form.confirm_password ? (
-                      <>
-                        <CheckCircle2 size={13} color="#16a34a" /> Passwords match
-                      </>
-                    ) : (
-                      <>
-                        <AlertCircle size={13} color="#dc2626" /> Passwords do not match
-                      </>
-                    )}
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 700,
+                      fontSize: '0.6875rem',
+                      flexShrink: 0,
+                    }}>1</span>
+                    <div>
+                      <strong>New Staff Credentials:</strong> Initial credentials and login links are dispatched to your registered phone or institutional email upon employment appointment.
+                    </div>
                   </div>
-                )}
+
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                    <span style={{
+                      background: '#dcfce7',
+                      color: '#047857',
+                      borderRadius: '999px',
+                      width: 18,
+                      height: 18,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 700,
+                      fontSize: '0.6875rem',
+                      flexShrink: 0,
+                    }}>2</span>
+                    <div>
+                      <strong>First-Time Login / Set Password:</strong> If you have been appointed but need to set your permanent password, use the self-service OTP verification flow.
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Account Role</label>
-                <select className="form-select" value={form.role} onChange={set('role')}>
-                  <option value="student">Student</option>
-                  <option value="instructor">Faculty Instructor / Lecturer</option>
-                  <option value="staff">Academic Staff Officer</option>
-                </select>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('forgot_password');
+                    setResetStep(1);
+                    setError('');
+                    setErrorMeta(null);
+                    setResetSuccess('');
+                  }}
+                  className="btn btn-primary"
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}
+                >
+                  <KeyRound size={15} />
+                  First-Time Staff Login / Set Password
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('login');
+                    setError('');
+                    setErrorMeta(null);
+                  }}
+                  className="btn btn-secondary"
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: '0.78125rem' }}
+                >
+                  <ArrowLeft size={14} />
+                  Already Have Credentials? Sign In
+                </button>
               </div>
 
-              <button type="submit" disabled={loading} className="btn btn-primary" style={{ marginTop: 4 }}>
-                {loading ? 'Creating Account…' : 'Create Account'}
-              </button>
-            </form>
+              <div style={{
+                fontSize: '0.71875rem',
+                color: 'var(--slate-500)',
+                textAlign: 'center',
+                marginTop: 4,
+                lineHeight: 1.4,
+              }}>
+                Need administrative onboarding or roster assistance? Contact Academic Affairs at <a href="mailto:academic@asdam.edu.gh" style={{ color: 'var(--primary-600)', fontWeight: 600 }}>academic@asdam.edu.gh</a>
+              </div>
+            </div>
           )}
 
           {/* SSO Footer */}

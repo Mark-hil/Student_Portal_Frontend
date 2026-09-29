@@ -247,9 +247,9 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
           </div>
 
           {isStudentCreation && (
-            <div style={{ padding: '12px 14px', background: '#eff6ff', borderRadius: 10, border: '1px solid #bfdbfe', fontSize: 12, color: '#1e40af', lineHeight: 1.5 }}>
-              <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                <Shield size={14} /> Automatic ASDAM ID & Profile Registration Gate
+            <div style={{ padding: '12px 14px', background: '#f0fdf4', borderRadius: 10, border: '1px solid #bbf7d0', fontSize: 12, color: '#065f46', lineHeight: 1.5 }}>
+              <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, color: '#047857' }}>
+                <Shield size={14} color="#047857" /> Automatic ASDAM ID & Profile Registration Gate
               </div>
               Upon account creation, the student is assigned an official Student ID (e.g. <code>ASDAM/NUR/26/001</code>). They will receive an SMS and Email with their credentials and the Portal URL.
             </div>
