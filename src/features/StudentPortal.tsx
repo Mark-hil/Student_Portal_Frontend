@@ -99,7 +99,7 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
     { id: 'courses', label: 'My Courses', Icon: BookOpen },
     { id: 'register', label: 'Course Registration', Icon: Plus },
     { id: 'grades', label: 'Grades & GPA', Icon: BarChart2 },
-    // { id: 'financials', label: 'Fees & Financials', Icon: Wallet },
+    { id: 'financials', label: 'Fees & Financials', Icon: Wallet },
     { id: 'notifications', label: 'Notifications', Icon: Bell },
     { id: 'profile', label: 'Profile', Icon: User },
   ];
@@ -169,7 +169,8 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
     users: isDepartmentalHead ? 'Department Faculty & Staff' : 'Staff & Faculty Access Control',
     audit_logs: 'Institutional Security & Audit Trail',
     courses_admin: 'Course Management',
-    // financials: 'Fees & Financials', bursar: 'Bursar & Accounts'
+    financials: 'Fees & Financials',
+    bursar: 'Bursar & Accounts',
   };
 
   const handleNavClick = (navId: string) => {
