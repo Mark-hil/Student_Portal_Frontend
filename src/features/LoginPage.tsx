@@ -89,7 +89,7 @@ export default function LoginPage({ onSuccess }: Props) {
     suggestActivation?: boolean;
     suggestReset?: boolean;
   } | null>(null);
-  
+
   // Standard form
   const [form, setForm] = useState({
     email: 'student@uniportal.edu',
@@ -283,13 +283,12 @@ export default function LoginPage({ onSuccess }: Props) {
         code === 'account_not_found'
       ) {
         setError(
-          'No account was found matching the provided identifier (Student ID, Email, Phone, or MOH PIN). ' +
-          'If you are an admitted student, please activate your portal account using your MOH PIN and Serial Number.'
+          'No account was found matching the provided credentials (Email, Student ID, or Username). Please check your credentials and try again.'
         );
         setErrorMeta({
           type: 'account_not_found',
-          title: 'Account Not Found or Inactive',
-          suggestActivation: true,
+          title: 'Account Not Found',
+          suggestActivation: false,
           suggestReset: true,
         });
       } else if (
@@ -425,7 +424,7 @@ export default function LoginPage({ onSuccess }: Props) {
                 <div className="brand-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   ASDAM <span style={{ color: '#facc15', fontSize: '0.75rem', fontWeight: 700, padding: '1px 5px', borderRadius: 4, background: 'rgba(250, 204, 21, 0.15)', border: '1px solid rgba(250, 204, 21, 0.3)' }}>Portal</span>
                 </div>
-                <div className="brand-subtitle">Health & Allied Sciences</div>
+                <div className="brand-subtitle">S.D.A NMTC Asamang - Agona</div>
               </div>
             </div>
 
@@ -485,15 +484,15 @@ export default function LoginPage({ onSuccess }: Props) {
               {mode === 'login'
                 ? 'Sign in to your account'
                 : mode === 'forgot_password'
-                ? 'Reset your password'
-                : 'Account Activation & Onboarding'}
+                  ? 'Reset your password'
+                  : 'Account Activation & Onboarding'}
             </h2>
             <p className="auth-header-sub">
               {mode === 'login'
                 ? 'Select a portal role or enter your credentials below'
                 : mode === 'forgot_password'
-                ? 'Recover access to your student or institutional portal account'
-                : 'Activate your admitted student profile or review staff onboarding'}
+                  ? 'Recover access to your student or institutional portal account'
+                  : 'Activate your admitted student profile or review staff onboarding'}
             </p>
           </div>
 

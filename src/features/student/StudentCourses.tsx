@@ -17,6 +17,7 @@ import { Empty } from '../../components/ui/Empty';
 import { useBreakpoint } from '../../hooks/useBreakpoint';
 import { ScrollableTable } from '../../components/ui/Responsive';
 import { StudentCourseModal } from './StudentCourseModal';
+import { ExamClearanceCard } from '../../components/ExamClearanceCard';
 
 const COLORS = [C.indigo, C.green, C.amber, '#ec4899', '#8b5cf6', '#06b6d4', '#f97316'];
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
@@ -193,6 +194,9 @@ export function StudentCourses({ onNav }: Props) {
           </div>
         </div>
       </div>
+
+      {/* ── Candidate Examination Clearance Slip & Hall Ticket ──── */}
+      <ExamClearanceCard />
 
       {/* ── Main Navigation: Active Courses vs Enrollment History ──── */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>

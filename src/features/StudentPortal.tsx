@@ -8,8 +8,9 @@ import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard, BookOpen, BarChart2, Bell, User,
   Plus, GraduationCap, LogOut, Search, ClipboardCheck, Users, Shield, ShieldCheck,
-  Menu, X, Wallet, Coins
+  Menu, X, Wallet, Coins, AlertCircle
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { C } from '../utils/theme';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { useBreakpoint } from '../hooks/useBreakpoint';
@@ -44,6 +45,9 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
   const [view, setView] = useState(['finance', 'finance-officer', 'finance_officer'].includes(initialUser.role) ? 'bursar' : 'dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [welcomePromptDismissed, setWelcomePromptDismissed] = useState(() => {
+    return sessionStorage.getItem('dismissed_activation_prompt') === 'true';
+  });
 
   // Always fetch fresh user profile from backend
   const { data: freshUser } = useQuery({
@@ -60,19 +64,6 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
       localStorage.setItem('portal_user', JSON.stringify(updated));
     } catch { /* ignore */ }
   };
-
-  // Hard gate: Mandatory Student Profile Registration before accessing portal features
-  if (currentUser.role === 'student' && !currentUser.is_registered) {
-    return (
-      <StudentRegistrationOnboarding
-        user={currentUser}
-        onComplete={(updated) => {
-          handleUserUpdate(updated);
-        }}
-        onLogout={onLogout}
-      />
-    );
-  }
 
   const { data: notifData } = useQuery({
     queryKey: ['notifications'],
@@ -170,6 +161,7 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
     courses_admin: 'Course Management',
     financials: 'Fees & Financials',
     bursar: 'Bursar & Accounts',
+    register_profile: 'Student Profile Registration',
   };
 
   const handleNavClick = (navId: string) => {
@@ -200,7 +192,20 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
       case 'financials': return <StudentFinancials user={currentUser} />;
       case 'batches': return <GradeBatchList role="lecturer" />;
       case 'review': return <GradeBatchList role="officer" />;
-      case 'notifications': return <NotificationsView />;
+      case 'notifications': return <NotificationsView user={currentUser} />;
+      case 'register_profile':
+        return (
+          <StudentRegistrationOnboarding
+            user={currentUser}
+            onComplete={(updated) => {
+              handleUserUpdate(updated);
+              setView('dashboard');
+              toast.success('Official registration complete! Profile updated.');
+            }}
+            onDismiss={() => setView('dashboard')}
+            onLogout={onLogout}
+          />
+        );
       case 'profile': return <ProfileView user={currentUser} onUserUpdate={handleUserUpdate} onNav={setView} />;
       default: return isFinance ? <FinanceDashboard user={currentUser} onNav={setView} /> : <StudentDashboard user={currentUser} onNav={setView} />;
     }
@@ -444,7 +449,7 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
         { id: 'dashboard', label: 'Home', Icon: LayoutDashboard },
         { id: 'courses', label: 'Courses', Icon: BookOpen },
         { id: 'register', label: 'Register', Icon: Plus },
-        { id: 'grades', label: 'Grades', Icon: BarChart2 },
+        { id: 'notifications', label: 'Alerts', Icon: Bell },
         { id: 'profile', label: 'Profile', Icon: User },
       ]
     : isLecturer
@@ -458,7 +463,7 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
         { id: 'dashboard', label: 'Home', Icon: LayoutDashboard },
         { id: 'users', label: 'Users', Icon: Users },
         { id: 'courses_admin', label: 'Courses', Icon: BookOpen },
-        { id: 'review', label: 'Review', Icon: ClipboardCheck },
+        { id: 'notifications', label: 'Alerts', Icon: Bell },
         { id: 'profile', label: 'Profile', Icon: User },
       ];
 
@@ -602,33 +607,49 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
             {/* Notifications Icon */}
             <button
               onClick={() => setView('notifications')}
+              aria-label="Campus Bulletins and Notifications"
+              title="Campus Bulletins & Alerts"
               style={{
                 position: 'relative',
-                background: '#fff',
-                border: `1px solid ${C.slate2}`,
+                background: view === 'notifications' ? '#ecfdf5' : '#ffffff',
+                border: view === 'notifications' ? '1.5px solid #047857' : `1px solid ${C.slate2}`,
                 borderRadius: 10,
-                width: 38,
-                height: 38,
+                width: 40,
+                height: 40,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
-                color: C.slate6,
+                color: view === 'notifications' ? '#047857' : C.slate7,
                 flexShrink: 0,
-                transition: 'all 0.15s',
+                transition: 'all 0.15s ease',
+                boxShadow: view === 'notifications' ? '0 0 0 3px rgba(4, 120, 87, 0.12)' : '0 1px 2px rgba(0,0,0,0.04)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#047857';
+                e.currentTarget.style.color = '#047857';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+              }}
+              onMouseLeave={(e) => {
+                if (view !== 'notifications') {
+                  e.currentTarget.style.borderColor = C.slate2;
+                  e.currentTarget.style.color = C.slate7;
+                }
+                e.currentTarget.style.transform = 'none';
               }}
             >
-              <Bell size={18} />
-              {unread > 0 && (
+              <Bell size={19} />
+              {unread > 0 ? (
                 <span
                   style={{
                     position: 'absolute',
-                    top: -3,
-                    right: -3,
-                    width: 17,
-                    height: 17,
-                    background: '#f43f5e',
-                    borderRadius: '50%',
+                    top: -4,
+                    right: -4,
+                    minWidth: 18,
+                    height: 18,
+                    padding: '0 4px',
+                    background: '#dc2626',
+                    borderRadius: 9999,
                     border: '2px solid #fff',
                     fontSize: 10,
                     fontWeight: 800,
@@ -637,10 +658,24 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
                     alignItems: 'center',
                     justifyContent: 'center',
                     animation: 'pulseGlow 2s infinite',
+                    boxShadow: '0 2px 4px rgba(220, 38, 38, 0.3)',
                   }}
                 >
                   {unread}
                 </span>
+              ) : (
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                    width: 7,
+                    height: 7,
+                    background: '#047857',
+                    borderRadius: '50%',
+                    opacity: 0.85,
+                  }}
+                />
               )}
             </button>
 
@@ -762,6 +797,126 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
           )}
         </div>
       </div>
+
+      {/* ── First-Time Gentle Welcome Modal ──────────────────────── */}
+      {isStudent && !currentUser.is_registered && !welcomePromptDismissed && view !== 'register_profile' && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(4, 19, 13, 0.78)',
+            backdropFilter: 'blur(5px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+            zIndex: 9999,
+          }}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: 20,
+              maxWidth: 520,
+              width: '100%',
+              padding: '30px 24px',
+              textAlign: 'center',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
+              border: '1px solid #fde047',
+              position: 'relative',
+            }}
+          >
+            <div
+              style={{
+                width: 60,
+                height: 60,
+                borderRadius: 18,
+                background: 'linear-gradient(135deg, #047857 0%, #064e3b 100%)',
+                border: '2px solid #facc15',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 16px',
+                boxShadow: '0 6px 18px rgba(4, 120, 87, 0.35)',
+              }}
+            >
+              <GraduationCap size={32} color="#facc15" />
+            </div>
+
+            <h2 style={{ fontSize: 20, fontWeight: 800, color: '#04130d', margin: '0 0 8px' }}>
+              Welcome to ASDAM Portal!
+            </h2>
+            <p style={{ fontSize: 13.5, color: '#475569', lineHeight: 1.5, margin: '0 0 20px' }}>
+              Welcome, <strong>{currentUser.first_name}</strong>! To ensure your academic records, examination clearance, and guardian notifications are properly authenticated, please complete your official student profile registration.
+            </p>
+
+            <div
+              style={{
+                background: '#fefce8',
+                border: '1px solid #fde047',
+                borderRadius: 12,
+                padding: '12px 14px',
+                marginBottom: 24,
+                textAlign: 'left',
+                fontSize: 12.5,
+                color: '#854d0e',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+              }}
+            >
+              <AlertCircle size={20} style={{ flexShrink: 0, color: '#ca8a04' }} />
+              <span>
+                You will need your <strong>Ghana Card number</strong> and <strong>Guardian emergency contact</strong>.
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button
+                onClick={() => {
+                  sessionStorage.setItem('dismissed_activation_prompt', 'true');
+                  setWelcomePromptDismissed(true);
+                  setView('register_profile');
+                }}
+                style={{
+                  padding: '12px 20px',
+                  fontSize: 13.5,
+                  fontWeight: 800,
+                  borderRadius: 10,
+                  background: 'linear-gradient(135deg, #047857 0%, #065f46 100%)',
+                  color: '#ffffff',
+                  border: 'none',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 14px rgba(4, 120, 87, 0.3)',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                Complete Profile Registration Now →
+              </button>
+
+              <button
+                onClick={() => {
+                  sessionStorage.setItem('dismissed_activation_prompt', 'true');
+                  setWelcomePromptDismissed(true);
+                }}
+                style={{
+                  padding: '10px 18px',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  borderRadius: 10,
+                  background: '#f8fafc',
+                  border: '1px solid #cbd5e1',
+                  color: '#475569',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                Remind Me Later (Proceed to Dashboard)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

@@ -779,3 +779,43 @@ export interface PasswordResetConfirmResponse {
     refresh: string;
   };
 }
+
+// ── Campus Announcements ───────────────────────────────────────────────────────
+export type AnnouncementCategory = 'general' | 'academic' | 'examination' | 'financial' | 'emergency';
+export type AnnouncementTargetAudience = 'all' | 'students' | 'faculty' | 'staff';
+
+export interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  category: AnnouncementCategory;
+  category_display: string;
+  target_audience: AnnouncementTargetAudience;
+  target_audience_display: string;
+  author: string | null;
+  author_name: string;
+  author_role: string;
+  is_pinned: boolean;
+  is_published: boolean;
+  attachment_url: string;
+  attachment_name: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// ── Examination Clearance & Hall Ticket ───────────────────────────────────────
+export interface ExamClearanceStatus {
+  is_eligible: boolean;
+  has_financial_hold: boolean;
+  hold_reason: string | null;
+  hold_amount: string;
+  balance: string;
+  registered_courses_count: number;
+  total_credits: number;
+  semester: string;
+  student_id: string;
+  student_name: string;
+  program: string;
+  class_name: string;
+}
+

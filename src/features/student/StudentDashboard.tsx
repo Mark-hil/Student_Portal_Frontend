@@ -8,6 +8,8 @@ import { Card } from '../../components/ui/Card';
 import { ProgressBar } from '../../components/ui/ProgressBar';
 import { SectionHead } from '../../components/ui/SectionHead';
 import { Empty } from '../../components/ui/Empty';
+import { ExamClearanceCard } from '../../components/ExamClearanceCard';
+import { CampusNoticeBoard } from '../../components/CampusNoticeBoard';
 
 const COLORS = ['#047857', '#eab308', '#10b981', '#f59e0b', '#065f46', '#facc15'];
 
@@ -72,6 +74,89 @@ export function StudentDashboard({ user, onNav }: { user: UserType; onNav: (v: s
         </div>
       </div>
 
+      {/* ── Official Student Registration Reminder Banner ──────── */}
+      {!user?.is_registered && (
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #fefce8 0%, #fffbeb 100%)',
+            border: '1px solid #fde047',
+            borderLeft: '4px solid #ca8a04',
+            borderRadius: 14,
+            padding: '16px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 14,
+            boxShadow: '0 2px 8px rgba(202, 138, 4, 0.08)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 260, flex: 1 }}>
+            <div
+              style={{
+                width: 42,
+                height: 42,
+                borderRadius: 12,
+                background: '#fef08a',
+                color: '#854d0e',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <AlertCircle size={22} />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 14, fontWeight: 800, color: '#713f12' }}>
+                  Official Student Registration Incomplete
+                </span>
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: 9999,
+                    background: '#fef08a',
+                    color: '#854d0e',
+                  }}
+                >
+                  Action Required
+                </span>
+              </div>
+              <p style={{ margin: '3px 0 0', fontSize: 12.5, color: '#854d0e', lineHeight: 1.4 }}>
+                Please submit your Ghana Card, emergency guardian contact, and set your private password to ensure seamless examination clearance.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => onNav('register_profile')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '9px 18px',
+              fontSize: 12.5,
+              fontWeight: 700,
+              borderRadius: 10,
+              background: 'linear-gradient(135deg, #ca8a04 0%, #a16207 100%)',
+              color: '#ffffff',
+              border: 'none',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              boxShadow: '0 2px 8px rgba(161, 98, 7, 0.3)',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            Complete Profile Now →
+          </button>
+        </div>
+      )}
+
+      {/* ── Examination Clearance Docket & Hall Ticket ──────── */}
+      <ExamClearanceCard />
+
       {/* ── Financial Hold Warning (if active) ──────────────── */}
       {hasHold && (
         <div
@@ -105,6 +190,9 @@ export function StudentDashboard({ user, onNav }: { user: UserType; onNav: (v: s
           </button>
         </div>
       )}
+
+      {/* ── Official Campus Notice Board ────────────────────── */}
+      <CampusNoticeBoard limit={4} />
 
       {/* ── Semester GPA + Cumulative GPA Cards ───────────── */}
       <div className="gpa-banner-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>

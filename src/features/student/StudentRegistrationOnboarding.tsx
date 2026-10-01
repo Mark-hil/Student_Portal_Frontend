@@ -18,6 +18,7 @@ interface Props {
   user: UserType;
   onComplete: (updatedUser: UserType) => void;
   onLogout: () => void;
+  onDismiss?: () => void;
 }
 
 const GHANA_REGIONS = [
@@ -26,7 +27,7 @@ const GHANA_REGIONS = [
   'Upper East', 'Upper West', 'Bono', 'Bono East', 'Ahafo'
 ];
 
-export function StudentRegistrationOnboarding({ user, onComplete, onLogout }: Props) {
+export function StudentRegistrationOnboarding({ user, onComplete, onLogout, onDismiss }: Props) {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -163,7 +164,7 @@ export function StudentRegistrationOnboarding({ user, onComplete, onLogout }: Pr
       };
       const res = await authApi.completeRegistration(payload);
       const updatedUser = res.data.user;
-      
+
       // Update access and refresh tokens if provided
       if (res.data.tokens) {
         localStorage.setItem('portal_access', res.data.tokens.access);
@@ -236,40 +237,64 @@ export function StudentRegistrationOnboarding({ user, onComplete, onLogout }: Pr
               ASDAM <span style={{ color: '#facc15', fontSize: 13, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: 'rgba(250, 204, 21, 0.15)', border: '1px solid rgba(250, 204, 21, 0.3)' }}>Student Portal</span>
             </div>
             <div style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.7)', fontWeight: 600 }}>
-              Arch-Bishop Porter College of Health & Allied Sciences
+              S.D.A NMTC Asamang - Agona
             </div>
           </div>
         </div>
 
-        <button
-          onClick={onLogout}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '8px 16px',
-            borderRadius: 10,
-            border: '1px solid rgba(255,255,255,0.12)',
-            background: 'rgba(255,255,255,0.05)',
-            color: '#cbd5e1',
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: 'pointer',
-            transition: 'all 0.15s',
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.background = 'rgba(244, 63, 94, 0.15)';
-            e.currentTarget.style.borderColor = 'rgba(244, 63, 94, 0.4)';
-            e.currentTarget.style.color = '#fda4af';
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)';
-            e.currentTarget.style.color = '#cbd5e1';
-          }}
-        >
-          <LogOut size={15} /> Sign out
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {onDismiss && (
+            <button
+              type="button"
+              onClick={onDismiss}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '8px 16px',
+                borderRadius: 10,
+                border: '1px solid rgba(250, 204, 21, 0.4)',
+                background: 'rgba(250, 204, 21, 0.12)',
+                color: '#fef08a',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+            >
+              Continue to Dashboard →
+            </button>
+          )}
+          <button
+            onClick={onLogout}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '8px 16px',
+              borderRadius: 10,
+              border: '1px solid rgba(255,255,255,0.12)',
+              background: 'rgba(255,255,255,0.05)',
+              color: '#cbd5e1',
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'rgba(244, 63, 94, 0.15)';
+              e.currentTarget.style.borderColor = 'rgba(244, 63, 94, 0.4)';
+              e.currentTarget.style.color = '#fda4af';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)';
+              e.currentTarget.style.color = '#cbd5e1';
+            }}
+          >
+            <LogOut size={15} /> Sign out
+          </button>
+        </div>
       </header>
 
       {/* Main Container Card */}
@@ -398,7 +423,7 @@ export function StudentRegistrationOnboarding({ user, onComplete, onLogout }: Pr
             First-Time Student Profile Registration
           </h1>
           <p style={{ fontSize: 14, color: '#94a3b8', lineHeight: 1.6, margin: 0 }}>
-            Welcome to ASDAM. As a newly enrolled student, institutional policies require you to complete your official bio-data, 
+            Welcome to ASDAM. As a newly enrolled student, institutional policies require you to complete your official bio-data,
             Ghana Card identification, and emergency contact details before accessing courses, semester grades, and academic services.
           </p>
         </div>
@@ -429,15 +454,14 @@ export function StudentRegistrationOnboarding({ user, onComplete, onLogout }: Pr
                     background: active
                       ? 'linear-gradient(135deg, rgba(250, 204, 21, 0.22) 0%, rgba(4, 120, 87, 0.18) 100%)'
                       : passed
-                      ? 'rgba(16, 185, 129, 0.08)'
-                      : 'rgba(255, 255, 255, 0.03)',
-                    border: `1.5px solid ${
-                      active
+                        ? 'rgba(16, 185, 129, 0.08)'
+                        : 'rgba(255, 255, 255, 0.03)',
+                    border: `1.5px solid ${active
                         ? '#facc15'
                         : passed
-                        ? 'rgba(16, 185, 129, 0.3)'
-                        : 'rgba(255, 255, 255, 0.06)'
-                    }`,
+                          ? 'rgba(16, 185, 129, 0.3)'
+                          : 'rgba(255, 255, 255, 0.06)'
+                      }`,
                     cursor: passed ? 'pointer' : 'default',
                     transition: 'all 0.2s',
                   }}
@@ -450,8 +474,8 @@ export function StudentRegistrationOnboarding({ user, onComplete, onLogout }: Pr
                       background: active
                         ? '#facc15'
                         : passed
-                        ? '#10b981'
-                        : 'rgba(255, 255, 255, 0.1)',
+                          ? '#10b981'
+                          : 'rgba(255, 255, 255, 0.1)',
                       color: active ? '#04130d' : '#fff',
                       fontSize: 12,
                       fontWeight: 800,
@@ -752,7 +776,7 @@ export function StudentRegistrationOnboarding({ user, onComplete, onLogout }: Pr
                   <Info size={18} /> Emergency Contact & Next of Kin Information
                 </div>
                 <p style={{ fontSize: 12.5, color: '#94a3b8', margin: '6px 0 0', lineHeight: 1.5 }}>
-                  Please ensure this phone number is active. In case of academic notifications or medical emergencies on campus, 
+                  Please ensure this phone number is active. In case of academic notifications or medical emergencies on campus,
                   the institution will contact this guardian immediately.
                 </p>
               </div>
@@ -849,7 +873,7 @@ export function StudentRegistrationOnboarding({ user, onComplete, onLogout }: Pr
                   <Lock size={18} color="#818cf8" /> Set Permanent Account Password
                 </div>
                 <p style={{ fontSize: 13, color: '#94a3b8', margin: '0 0 16px', lineHeight: 1.5 }}>
-                  You logged in with your temporary voucher Serial Number. Create a secure personal password 
+                  You logged in with your temporary voucher Serial Number. Create a secure personal password
                   to protect your portal account going forward. (Minimum 8 characters).
                 </p>
 
@@ -890,18 +914,18 @@ export function StudentRegistrationOnboarding({ user, onComplete, onLogout }: Pr
                     background: !confirmPassword
                       ? 'rgba(245, 158, 11, 0.12)'
                       : formData.new_password === confirmPassword
-                      ? 'rgba(16, 185, 129, 0.12)'
-                      : 'rgba(239, 68, 68, 0.12)',
+                        ? 'rgba(16, 185, 129, 0.12)'
+                        : 'rgba(239, 68, 68, 0.12)',
                     border: !confirmPassword
                       ? '1px solid rgba(245, 158, 11, 0.3)'
                       : formData.new_password === confirmPassword
-                      ? '1px solid rgba(16, 185, 129, 0.3)'
-                      : '1px solid rgba(239, 68, 68, 0.3)',
+                        ? '1px solid rgba(16, 185, 129, 0.3)'
+                        : '1px solid rgba(239, 68, 68, 0.3)',
                     color: !confirmPassword
                       ? '#fbbf24'
                       : formData.new_password === confirmPassword
-                      ? '#34d399'
-                      : '#f87171'
+                        ? '#34d399'
+                        : '#f87171'
                   }}>
                     {!confirmPassword ? (
                       <>

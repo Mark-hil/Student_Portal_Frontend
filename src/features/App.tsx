@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import LoginPage from './LoginPage';
 import StudentPortal from './StudentPortal';
 import type { User } from '../types';
+import { useAuthStore } from '../store/authStore';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -13,7 +14,11 @@ export default function App() {
   const [user, setUser] = useState<User | null>(() => {
     try {
       const s = localStorage.getItem('portal_user');
-      return s ? JSON.parse(s) : null;
+      const u = s ? JSON.parse(s) : null;
+      if (u) {
+        useAuthStore.getState().setUser(u);
+      }
+      return u;
     } catch { return null; }
   });
 
@@ -47,8 +52,8 @@ export default function App() {
         }}
       />
       {user
-        ? <StudentPortal onLogout={() => { localStorage.clear(); setUser(null); queryClient.clear(); }} user={user} />
-        : <LoginPage onSuccess={u => { localStorage.setItem('portal_user', JSON.stringify(u)); setUser(u); }} />
+        ? <StudentPortal onLogout={() => { localStorage.clear(); useAuthStore.getState().logout(); setUser(null); queryClient.clear(); }} user={user} />
+        : <LoginPage onSuccess={u => { localStorage.setItem('portal_user', JSON.stringify(u)); useAuthStore.getState().setUser(u); setUser(u); }} />
       }
     </QueryClientProvider>
   );

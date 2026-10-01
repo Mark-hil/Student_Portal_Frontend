@@ -70,7 +70,7 @@ export const StudentRegistrationModal: React.FC<StudentRegistrationModalProps> =
                 </span>
               </div>
               <div style={{ fontSize: 13, color: C.slate5, marginTop: 3 }}>
-                Arch-Bishop Porter College of Health & Allied Sciences (ASDAM)
+                S.D.A NMTC Asamang - Agona (ASDAM)
               </div>
             </div>
           </div>

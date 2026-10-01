@@ -9,6 +9,7 @@ import { GradeBatchList } from '../shared/GradeBatchList';
 import { CourseList } from './CourseList';
 import { CourseDetail } from './CourseDetail';
 import { SectionHead } from '../../components/ui/SectionHead';
+import { CampusNoticeBoard } from '../../components/CampusNoticeBoard';
 
 export function LecturerDashboard({ user }: { user: UserType }) {
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
@@ -92,6 +93,9 @@ export function LecturerDashboard({ user }: { user: UserType }) {
           </Card>
         ))}
       </div>
+
+      {/* ── Official Campus Notice Board ────────────────────── */}
+      <CampusNoticeBoard limit={3} />
 
       {selectedCourse ? (
         <CourseDetail courseId={selectedCourse} onBack={() => setSelectedCourse(null)} />

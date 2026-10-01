@@ -10,6 +10,7 @@ import type { User as UserType, AuditLogStatus } from '../../types';
 import { Card } from '../../components/ui/Card';
 import { GradeBatchList } from '../shared/GradeBatchList';
 import { Spinner } from '../../components/ui/Spinner';
+import { CampusNoticeBoard } from '../../components/CampusNoticeBoard';
 
 export function AdminDashboard({ user, onNav }: { user: UserType; onNav?: (view: string) => void }) {
   const isSuperAdmin = user.role === 'super-admin' || user.role === 'super_admin' || user.role === 'admin';
@@ -221,6 +222,9 @@ export function AdminDashboard({ user, onNav }: { user: UserType; onNav?: (view:
           </div>
         </Card>
       )}
+
+      {/* ── Campus Bulletin & Circular Broadcast ─────────── */}
+      <CampusNoticeBoard user={user} />
 
       {/* ── Grade Batch Review Queue ───────────────────────── */}
       <div style={{ marginTop: 4 }}>

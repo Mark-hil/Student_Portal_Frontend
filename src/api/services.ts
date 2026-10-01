@@ -20,6 +20,7 @@ import type {
   PasswordResetRequestPayload, PasswordResetRequestResponse,
   PasswordResetVerifyPayload, PasswordResetVerifyResponse,
   PasswordResetConfirmPayload, PasswordResetConfirmResponse,
+  Announcement, ExamClearanceStatus,
 } from '../types';
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -517,4 +518,50 @@ export const smsApi = {
     downloadCsvBlob(res.data, filename);
   },
 };
+
+// ── Campus Announcements & Circulars ──────────────────────────────────────────
+export const announcementsApi = {
+  getAll: (params?: { category?: string; search?: string }) =>
+    client.get<PaginatedResponse<Announcement> | Announcement[]>('/notifications/announcements/', { params }),
+
+  getById: (id: string) =>
+    client.get<Announcement>(`/notifications/announcements/${id}/`),
+
+  create: (data: Partial<Announcement>) =>
+    client.post<Announcement>('/notifications/announcements/', data),
+
+  update: (id: string, data: Partial<Announcement>) =>
+    client.patch<Announcement>(`/notifications/announcements/${id}/`, data),
+
+  delete: (id: string) =>
+    client.delete(`/notifications/announcements/${id}/`),
+
+  togglePin: (id: string) =>
+    client.post<{ status: string; is_pinned: boolean }>(`/notifications/announcements/${id}/toggle-pin/`),
+};
+
+// ── Examination Clearance Slip & Hall Ticket ──────────────────────────────────
+export const examSlipApi = {
+  getStatus: (studentId?: string) =>
+    client.get<ExamClearanceStatus>('/courses/exam-clearance/status/', {
+      params: studentId ? { student_id: studentId } : undefined,
+    }),
+
+  downloadPdf: async (studentId?: string, filename?: string) => {
+    const res = await client.get('/courses/exam-clearance/pdf/', {
+      params: studentId ? { student_id: studentId } : undefined,
+      responseType: 'blob',
+    });
+    const defaultName = filename || `Exam_Clearance_Slip_${new Date().toISOString().slice(0, 10)}.pdf`;
+    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', defaultName);
+    document.body.appendChild(link);
+    link.click();
+    link.parentNode?.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  },
+};
+
 
