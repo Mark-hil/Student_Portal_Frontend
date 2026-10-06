@@ -1,6 +1,6 @@
 # UniPortal — Frontend Web Application
 
-The frontend client for the UniPortal University Management & Student Information System, built with **React 18**, **TypeScript**, and **Vite**.
+The frontend client for the S.D.A NMTC Asamang - AgonaManagement & Student Information System, built with **React 18**, **TypeScript**, and **Vite**.
 
 ---
 
