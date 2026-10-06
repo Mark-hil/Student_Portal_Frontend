@@ -17,9 +17,11 @@ import {
   Sparkles,
   QrCode,
   BookOpen,
+  AlertTriangle,
+  ArrowRight,
 } from 'lucide-react';
 import { C, gpaColor, gradeColor } from '../../utils/theme';
-import { gradesApi } from '../../api/services';
+import { gradesApi, financialsApi } from '../../api/services';
 import { useAuthStore } from '../../store/authStore';
 import { Card } from '../../components/ui/Card';
 import { ProgressBar } from '../../components/ui/ProgressBar';
@@ -29,7 +31,7 @@ import { useBreakpoint } from '../../hooks/useBreakpoint';
 import { ScrollableTable } from '../../components/ui/Responsive';
 import toast from 'react-hot-toast';
 
-export function StudentGrades() {
+export function StudentGrades({ onNav }: { onNav?: (tab: string) => void } = {}) {
   const { isMobile } = useBreakpoint();
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'transcript' | 'coursework'>('transcript');
@@ -37,6 +39,12 @@ export function StudentGrades() {
   const [showGradingScale, setShowGradingScale] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const qc = useQueryClient();
+
+  const { data: statement } = useQuery({
+    queryKey: ['financial-statement'],
+    queryFn: () => financialsApi.getMyStatement().then((r) => r.data),
+    staleTime: 30_000,
+  });
 
   const { data: gpa, refetch: refetchGpa } = useQuery({
     queryKey: ['gpa-summary'],
@@ -80,6 +88,10 @@ export function StudentGrades() {
   const allGrades = gradeData?.results ?? [];
   const semGPA = gpa?.semester_gpa ? parseFloat(gpa.semester_gpa) : null;
   const cumGPA = gpa?.cumulative_gpa ? parseFloat(gpa.cumulative_gpa) : null;
+
+  const hasHold = Boolean(statement?.has_active_hold);
+  const feeBalance = statement?.balance ? Number(statement.balance) : 0;
+  const isArrears = hasHold || feeBalance > 0;
 
   const candidateName =
     user?.full_name ||
@@ -188,8 +200,24 @@ export function StudentGrades() {
   const handleDownloadPdf = async () => {
     try {
       setDownloading(true);
-      await gradesApi.downloadTranscriptPdf();
-      toast.success('Official Academic Transcript downloaded successfully');
+      const res = await gradesApi.downloadTranscriptPdf();
+      if (res?.isOfficial) {
+        toast.success('Official Academic Transcript downloaded successfully');
+      } else {
+        const arrearsVal = res?.holdAmount ? Number(res.holdAmount) : feeBalance;
+        toast(
+          `Unofficial Academic Transcript downloaded. Outstanding fee balance: GH¢ ${arrearsVal.toLocaleString('en-US', { minimumFractionDigits: 2 })}. Please settle balance via Student Financials.`,
+          {
+            icon: '📄',
+            duration: 6500,
+            style: {
+              background: '#fffbeb',
+              color: '#92400e',
+              border: '1px solid #fde68a',
+            },
+          }
+        );
+      }
     } catch (err: any) {
       let msg = 'Failed to generate transcript PDF';
       if (err.response?.data instanceof Blob) {
@@ -336,22 +364,30 @@ export function StudentGrades() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 8,
-                background: 'linear-gradient(135deg, #ca8a04 0%, #a16207 100%)',
+                background: isArrears
+                  ? 'linear-gradient(135deg, #d97706 0%, #b45309 100%)'
+                  : 'linear-gradient(135deg, #ca8a04 0%, #a16207 100%)',
                 color: '#ffffff',
-                border: '1px solid #fef08a',
+                border: isArrears ? '1px solid #fef3c7' : '1px solid #fef08a',
                 borderRadius: 12,
                 padding: '11px 22px',
                 fontSize: 13.5,
                 fontWeight: 800,
                 cursor: downloading ? 'not-allowed' : 'pointer',
-                boxShadow: '0 4px 14px rgba(202, 138, 4, 0.35)',
+                boxShadow: isArrears
+                  ? '0 4px 14px rgba(217, 119, 6, 0.35)'
+                  : '0 4px 14px rgba(202, 138, 4, 0.35)',
                 opacity: downloading ? 0.75 : 1,
                 transition: 'all 0.15s ease',
                 flex: isMobile ? '2' : 'none',
               }}
             >
               <FileDown size={17} />
-              {downloading ? 'Generating Official PDF…' : 'Download PDF Transcript'}
+              {downloading
+                ? 'Generating PDF…'
+                : isArrears
+                ? 'Download Unofficial PDF Transcript'
+                : 'Download PDF Transcript'}
             </button>
           )}
         </div>
@@ -438,6 +474,77 @@ export function StudentGrades() {
       {/* =================================================================== */}
       {activeTab === 'transcript' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {/* ── Fee Arrears Advisory Notice Banner ──────────────────────── */}
+          {isArrears && (
+            <div
+              style={{
+                background: '#fffbeb',
+                border: '1px solid #fde68a',
+                borderRadius: 14,
+                padding: '16px 20px',
+                display: 'flex',
+                alignItems: isMobile ? 'flex-start' : 'center',
+                justifyContent: 'space-between',
+                flexDirection: isMobile ? 'column' : 'row',
+                gap: 14,
+                boxShadow: '0 2px 8px rgba(245, 158, 11, 0.08)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <div
+                  style={{
+                    background: '#fef3c7',
+                    color: '#b45309',
+                    borderRadius: 10,
+                    padding: 8,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <AlertTriangle size={20} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 13.5, fontWeight: 800, color: '#92400e' }}>
+                    Official Academic Transcript Withheld Due to Outstanding Arrears
+                  </div>
+                  <div style={{ fontSize: 12.5, color: '#78350f', marginTop: 3, lineHeight: 1.45 }}>
+                    Official academic transcript is withheld due to outstanding semester fee arrears of{' '}
+                    <strong>GH¢ {feeBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong>.
+                    Please settle your balance via Student Financials. You may still download your{' '}
+                    <strong>Unofficial Student Advisory Transcript</strong> at any time.
+                  </div>
+                </div>
+              </div>
+
+              {onNav && (
+                <button
+                  onClick={() => onNav('financials')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '9px 16px',
+                    borderRadius: 10,
+                    background: '#d97706',
+                    color: '#ffffff',
+                    border: 'none',
+                    fontWeight: 700,
+                    fontSize: 12.5,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    alignSelf: isMobile ? 'flex-start' : 'center',
+                    boxShadow: '0 2px 6px rgba(217, 119, 6, 0.25)',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  Settle via Financials <ArrowRight size={14} />
+                </button>
+              )}
+            </div>
+          )}
+
           {/* ── Candidate Academic Dossier Card ───────────────────────────── */}
           <Card
             style={{
@@ -504,22 +611,41 @@ export function StudentGrades() {
                   {standing.label}
                 </div>
 
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 5,
-                    padding: '6px 12px',
-                    borderRadius: 99,
-                    background: '#f0fdf4',
-                    border: '1px solid #bbf7d0',
-                    color: '#15803d',
-                    fontSize: 12,
-                    fontWeight: 700,
-                  }}
-                >
-                  <CheckCircle2 size={14} /> Good Standing • Certified
-                </div>
+                {isArrears ? (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      padding: '6px 12px',
+                      borderRadius: 99,
+                      background: '#fef2f2',
+                      border: '1px solid #fecaca',
+                      color: '#b91c1c',
+                      fontSize: 12,
+                      fontWeight: 700,
+                    }}
+                  >
+                    <AlertTriangle size={14} /> Unofficial • Fee Arrears (GH¢ {feeBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })})
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      padding: '6px 12px',
+                      borderRadius: 99,
+                      background: '#f0fdf4',
+                      border: '1px solid #bbf7d0',
+                      color: '#15803d',
+                      fontSize: 12,
+                      fontWeight: 700,
+                    }}
+                  >
+                    <CheckCircle2 size={14} /> Good Standing • Certified
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1147,7 +1273,7 @@ export function StudentGrades() {
                       display: 'flex',
                       alignItems: 'center',
                       gap: 8,
-                      background: '#064e3b',
+                      background: isArrears ? '#d97706' : '#064e3b',
                       color: '#fff',
                       border: 'none',
                       borderRadius: 10,
@@ -1159,7 +1285,11 @@ export function StudentGrades() {
                     }}
                   >
                     <FileDown size={15} />
-                    {downloading ? 'Downloading…' : 'Save PDF Copy'}
+                    {downloading
+                      ? 'Downloading…'
+                      : isArrears
+                      ? 'Save Unofficial PDF'
+                      : 'Save PDF Copy'}
                   </button>
                 </div>
               </div>

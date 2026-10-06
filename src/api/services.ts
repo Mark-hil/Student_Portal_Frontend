@@ -251,15 +251,28 @@ export const gradesApi = {
   transcript:    () => client.get<TranscriptSemester[]>('/grades/transcript/'),
   downloadTranscriptPdf: async () => {
     const res = await client.get('/grades/transcript/pdf/', { responseType: 'blob' });
+    const isOfficial = res.headers['x-transcript-official'] === 'true';
+    const holdAmount = res.headers['x-financial-hold'];
+
+    let filename = isOfficial ? 'official_transcript.pdf' : 'unofficial_transcript.pdf';
+    const disposition = res.headers['content-disposition'];
+    if (disposition && disposition.includes('filename=')) {
+      const match = disposition.match(/filename="?([^";]+)"?/);
+      if (match && match[1]) {
+        filename = match[1];
+      }
+    }
+
     const blob = new Blob([res.data], { type: 'application/pdf' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'unofficial_transcript.pdf';
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
+    return { isOfficial, holdAmount, filename };
   },
   courseSummary: () => client.get<CourseSummaryRow[]>('/grades/course-summary/'),
   recompute:     (semester?: string) => client.post('/grades/recompute/', { semester }),

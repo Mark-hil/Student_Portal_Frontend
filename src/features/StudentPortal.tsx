@@ -188,7 +188,7 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
         return <BursarManagement />;
       case 'courses': return <StudentCourses onNav={setView} />;
       case 'register': return <CourseRegistration />;
-      case 'grades': return <StudentGrades />;
+      case 'grades': return <StudentGrades onNav={setView} />;
       case 'financials': return <StudentFinancials user={currentUser} />;
       case 'batches': return <GradeBatchList role="lecturer" />;
       case 'review': return <GradeBatchList role="officer" />;
