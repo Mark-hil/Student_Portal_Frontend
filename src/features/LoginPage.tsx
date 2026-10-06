@@ -8,7 +8,7 @@ import React, { useState, useEffect, FormEvent } from 'react';
 import {
   GraduationCap, Mail, Lock, User, Eye, EyeOff, AlertCircle,
   ShieldCheck, Calendar, Award, Clock, ArrowRight,
-  BookOpen, Shield, Coins, KeyRound, CheckCircle2, HeartPulse, Phone,
+  BookOpen, Shield, KeyRound, CheckCircle2, HeartPulse, Phone,
   Building2, ArrowLeft, Smartphone, UserCheck, HelpCircle
 } from 'lucide-react';
 import client from '../api/client';
@@ -19,67 +19,9 @@ interface Props {
   onSuccess: (user: any, tokens: any) => void;
 }
 
-const DEMO_ACCOUNTS = [
-  {
-    role: 'Student',
-    label: 'Student Portal',
-    email: 'student@uniportal.edu',
-    icon: GraduationCap,
-    color: 'var(--emerald-500)',
-    bg: 'var(--emerald-50)',
-    border: '#a7f3d0',
-  },
-  {
-    role: 'Lecturer',
-    label: 'Faculty Portal',
-    email: 'lecturer@uniportal.edu',
-    icon: BookOpen,
-    color: 'var(--violet-500)',
-    bg: 'var(--violet-50)',
-    border: '#ddd6fe',
-  },
-  {
-    role: 'Head of Department',
-    label: 'Departmental Directorate',
-    email: 'hod@uniportal.edu',
-    icon: Building2,
-    color: '#0284c7',
-    bg: '#f0f9ff',
-    border: '#bae6fd',
-  },
-  {
-    role: 'Academic Officer',
-    label: 'Admissions & Registrar',
-    email: 'academic@uniportal.edu',
-    icon: Calendar,
-    color: 'var(--rose-500)',
-    bg: 'var(--rose-50)',
-    border: '#fbcfe8',
-  },
-  {
-    role: 'Finance Officer',
-    label: 'Finance & Treasury',
-    email: 'finance@uniportal.edu',
-    icon: Coins,
-    color: '#d97706',
-    bg: '#fffbeb',
-    border: '#fde68a',
-  },
-  {
-    role: 'Super Admin',
-    label: 'System Administration',
-    email: 'admin@uniportal.edu',
-    icon: Shield,
-    color: 'var(--primary-600)',
-    bg: 'var(--primary-50)',
-    border: 'var(--primary-200)',
-  },
-];
-
 export default function LoginPage({ onSuccess }: Props) {
   const [mode, setMode] = useState<'login' | 'register' | 'forgot_password'>('login');
   const [registerType, setRegisterType] = useState<'moh' | 'custom'>('moh');
-  const [selectedDemoRole, setSelectedDemoRole] = useState<string | null>('Student');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -92,9 +34,9 @@ export default function LoginPage({ onSuccess }: Props) {
 
   // Standard form
   const [form, setForm] = useState({
-    email: 'student@uniportal.edu',
-    password: 'password123',
-    confirm_password: 'password123',
+    email: '',
+    password: '',
+    confirm_password: '',
     first_name: '',
     last_name: '',
     role: 'student',
@@ -150,13 +92,6 @@ export default function LoginPage({ onSuccess }: Props) {
       setErrorMeta(null);
     }
     setMohForm(f => ({ ...f, [k]: e.target.value }));
-  };
-
-  const selectDemoAccount = (demo: typeof DEMO_ACCOUNTS[0]) => {
-    setSelectedDemoRole(demo.role);
-    setForm(f => ({ ...f, email: demo.email, password: 'password123' }));
-    setError('');
-    setErrorMeta(null);
   };
 
   const handleVerifyMoh = async () => {
@@ -592,57 +527,7 @@ export default function LoginPage({ onSuccess }: Props) {
             </div>
           )}
 
-          {/* Demo Role Switcher */}
-          {mode === 'login' && (
-            <div style={{ marginBottom: 14 }}>
-              <div className="flex items-center justify-between" style={{ marginBottom: 6 }}>
-                <span style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--slate-500)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Instant Demo Login
-                </span>
-                <span style={{ fontSize: '0.65625rem', color: 'var(--slate-400)', fontWeight: 500 }}>
-                  Click to select
-                </span>
-              </div>
-              <div className="demo-role-grid">
-                {DEMO_ACCOUNTS.map(demo => {
-                  const Icon = demo.icon;
-                  const isSelected = selectedDemoRole === demo.role && form.email === demo.email;
-                  return (
-                    <button
-                      key={demo.role}
-                      type="button"
-                      onClick={() => selectDemoAccount(demo)}
-                      className="demo-role-btn"
-                      style={{
-                        borderColor: isSelected ? demo.color : 'var(--border-subtle)',
-                        background: isSelected ? demo.bg : 'var(--slate-50)',
-                        boxShadow: isSelected ? `0 2px 6px ${demo.color}20` : 'none',
-                      }}
-                    >
-                      <div
-                        className="demo-role-icon"
-                        style={{
-                          background: isSelected ? demo.color : '#ffffff',
-                          color: isSelected ? '#ffffff' : demo.color,
-                          border: isSelected ? 'none' : '1px solid var(--border-subtle)',
-                        }}
-                      >
-                        <Icon size={13} />
-                      </div>
-                      <div style={{ overflow: 'hidden' }}>
-                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--slate-900)', whiteSpace: 'nowrap' }}>
-                          {demo.role}
-                        </div>
-                        <div style={{ fontSize: '0.625rem', color: 'var(--slate-500)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {demo.email.split('@')[0]}
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+
 
           {/* Success Notice for Password Reset */}
           {resetSuccess && (
@@ -1052,23 +937,15 @@ export default function LoginPage({ onSuccess }: Props) {
                     type="text"
                     className="form-input has-icon"
                     value={form.email}
-                    onChange={e => {
-                      setSelectedDemoRole(null);
-                      set('email')(e);
-                    }}
+                    onChange={set('email')}
                     required
-                    placeholder="student@uniportal.edu or ASDAM/NUR/... or MOH-PIN"
+                    placeholder="student@uniportal.edu, Student ID, or MOH PIN"
                   />
                 </div>
               </div>
 
               <div className="form-group">
-                <div className="flex items-center justify-between">
-                  <label className="form-label">Password</label>
-                  <span style={{ fontSize: '0.71875rem', color: 'var(--primary-600)', fontWeight: 600 }}>
-                    Default: password123 (or Serial No.)
-                  </span>
-                </div>
+                <label className="form-label">Password</label>
                 <div className="input-wrap">
                   <Lock size={15} className="input-icon" />
                   <input
@@ -1077,7 +954,7 @@ export default function LoginPage({ onSuccess }: Props) {
                     value={form.password}
                     onChange={set('password')}
                     required
-                    placeholder="Enter password or Serial Number"
+                    placeholder="Enter your password or Serial Number"
                   />
                   <button
                     type="button"
