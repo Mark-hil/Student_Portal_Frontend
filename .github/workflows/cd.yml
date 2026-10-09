@@ -1,4 +1,4 @@
-name: Frontend CD Pipeline (Docker Hub & DigitalOcean)
+name: Frontend CD Pipeline (Publish to Docker Registry)
 
 on:
   push:
@@ -15,10 +15,10 @@ concurrency:
 
 jobs:
   # ─────────────────────────────────────────────────────────────
-  # Continuous Deployment: Build, Push to Docker Hub, Deploy to DO
+  # Continuous Deployment: Build, Smoke Test & Publish
   # ─────────────────────────────────────────────────────────────
-  build-and-deploy:
-    name: Build, Publish & Deploy to DigitalOcean
+  build-and-publish:
+    name: Build, Verify & Publish Frontend to Docker Hub
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -36,7 +36,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Extract Docker Metadata & Tags
+      - name: Extract Docker Metadata & Semantic Tags
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -50,7 +50,34 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=ref,event=tag
 
-      - name: Build & Push Docker Image
+      - name: Build Docker Image (Local Test Target)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          load: true
+          build-args: |
+            VITE_API_URL=${{ secrets.VITE_API_URL || '/api/v1' }}
+          tags: student-portal-frontend:pre-push-test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ── PRE-PUSH CONTAINER SMOKE TESTS ──────────────────────────
+      - name: Run Container Image Smoke Tests
+        run: |
+          echo "Starting temporary Nginx test container on port 8080..."
+          docker run -d --name smoke-test-frontend -p 8080:80 student-portal-frontend:pre-push-test
+          sleep 2
+          
+          echo "Testing HTTP response from container..."
+          curl -f -I http://localhost:8080/
+          
+          echo "Cleaning up test container..."
+          docker rm -f smoke-test-frontend
+          echo "✅ Frontend Nginx container smoke test passed! HTML served successfully."
+
+      # ── PUSH VERIFIED IMAGE TO DOCKER HUB ────────────────────────
+      - name: Push Verified Image to Docker Hub
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -61,28 +88,16 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
-          cache-to: type=gha,mode=max
 
-      - name: Install doctl (DigitalOcean CLI)
-        if: ${{ env.DO_TOKEN_AVAILABLE == 'true' }}
-        env:
-          DO_TOKEN_AVAILABLE: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN != '' && secrets.DO_APP_ID != '' }}
-        uses: digitalocean/action-doctl@v2
-        with:
-          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-
-      - name: Trigger DigitalOcean App Platform Deployment (doctl)
-        if: ${{ env.DO_TOKEN_AVAILABLE == 'true' }}
-        env:
-          DO_TOKEN_AVAILABLE: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN != '' && secrets.DO_APP_ID != '' }}
+      - name: Publish Deployment Summary to GitHub Actions
         run: |
-          echo "Initiating DigitalOcean App Platform deployment for App ID: ${{ secrets.DO_APP_ID }}"
-          doctl apps create-deployment ${{ secrets.DO_APP_ID }} --wait=false
-          echo "✅ Deployment trigger dispatched to DigitalOcean App Platform successfully!"
-
-      - name: Trigger DigitalOcean Webhook Deployment (Alternative Fallback)
-        if: ${{ secrets.DO_DEPLOY_WEBHOOK_URL != '' }}
-        run: |
-          echo "Triggering DigitalOcean deployment via webhook..."
-          curl -X POST -f "${{ secrets.DO_DEPLOY_WEBHOOK_URL }}"
-          echo "✅ DigitalOcean deploy webhook invoked successfully!"
+          echo "## 🚀 Verified Frontend Docker Image Successfully Published!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Repository:** \`${{ secrets.DOCKERHUB_USERNAME }}/student-portal-frontend\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🛡️ Smoke Test Status: **PASSED (Nginx Web Server & Static Bundle verified)**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🏷️ Published Tags:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
