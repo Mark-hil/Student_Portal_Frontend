@@ -17,7 +17,7 @@ function onRefreshed(token: string) {
 
 export const client: AxiosInstance = axios.create({
   baseURL: BASE_URL,
-  timeout: 15_000,
+  timeout: 30_000,
   headers: { 'Content-Type': 'application/json' },
 });
 
