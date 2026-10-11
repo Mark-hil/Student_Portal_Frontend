@@ -10,8 +10,9 @@ export function useWebSocket() {
 
     let isMounted = true;
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.hostname || 'localhost';
-    const wsUrl = `${protocol}//${host}:8000/ws/notifications/?token=${encodeURIComponent(token)}`;
+    // Use window.location.host (e.g. localhost:8080) so it traverses the Nginx reverse proxy properly
+    const host = window.location.host || 'localhost:8080';
+    const wsUrl = `${protocol}//${host}/ws/notifications/?token=${encodeURIComponent(token)}`;
 
     try {
       const socket = new WebSocket(wsUrl);

@@ -12,6 +12,8 @@ import {
   Award,
   Settings,
   Download,
+  RotateCcw,
+  Calculator,
 } from 'lucide-react';
 import { financialsApi } from '../../api/services';
 import type { BursarOverview, User as UserType } from '../../types';
@@ -204,6 +206,22 @@ export function FinanceDashboard({ user, onNav }: Props) {
             </button>
 
             <button
+              onClick={() => onNav?.('bursar_tariffs')}
+              className="fin-btn-gold"
+              style={{ fontSize: 13, padding: '10px 18px', background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#fff', border: '1px solid #38bdf8' }}
+            >
+              <Calculator size={16} />
+              Fee Structures &amp; Billing
+            </button>
+            <button
+              onClick={() => onNav?.('bursar_refunds')}
+              className="fin-btn-gold"
+              style={{ fontSize: 13, padding: '10px 18px', background: 'linear-gradient(135deg, #0f766e 0%, #115e59 100%)', color: '#fff', border: '1px solid #2dd4bf' }}
+            >
+              <RotateCcw size={16} />
+              Overpayments &amp; Refunds
+            </button>
+            <button
               onClick={() => onNav?.('bursar')}
               className="fin-btn-gold"
               style={{ fontSize: 13, padding: '10px 18px' }}
@@ -329,6 +347,140 @@ export function FinanceDashboard({ user, onNav }: Props) {
           <div className="fin-stat-sub">
             Arrears &gt; GH₵ 500.00 rule enforced
           </div>
+        </div>
+
+        {/* Student Credit Balances & Overpayments */}
+        <div className="fin-stat-card" style={{ cursor: 'pointer' }} onClick={() => onNav?.('bursar_refunds')}>
+          <div className="fin-stat-header">
+            <span className="fin-stat-label">OVERPAYMENT CREDITS</span>
+            <span className="fin-badge fin-badge-green">Student Surplus</span>
+          </div>
+          <div className="fin-stat-val emerald">
+            GH₵ {Number(metrics.total_credits || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+          <div className="fin-stat-sub" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>{(metrics.pending_refunds_count || 0) > 0 ? `${metrics.pending_refunds_count} pending refund requests` : 'Auto-deducts next term'}</span>
+            <span style={{ color: '#047857', fontWeight: 700, fontSize: 11 }}>Review &rarr;</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Prominent Finance Operations Banner: Billing Engine & Overpayment Credits ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 16 }}>
+        {/* Billing Engine Action Card */}
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+            border: '2px solid #7dd3fc',
+            borderRadius: 16,
+            padding: '20px 24px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            boxShadow: '0 4px 12px rgba(2, 132, 199, 0.08)',
+          }}
+        >
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ background: '#0284c7', color: '#fff', borderRadius: 10, padding: 8, display: 'flex' }}>
+                  <Calculator size={20} />
+                </div>
+                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#0c4a6e' }}>
+                  Student Tuition Billing &amp; Tariffs
+                </h3>
+              </div>
+              <span style={{ fontSize: 11, fontWeight: 800, background: '#0284c7', color: '#fff', padding: '3px 10px', borderRadius: 99 }}>
+                Bursar Engine
+              </span>
+            </div>
+            <p style={{ margin: '0 0 16px 0', fontSize: 13, color: '#0369a1', lineHeight: 1.5 }}>
+              Generate official semester billing statements for Level 100, 200, 300, 400 &amp; Postgraduate students.
+              <strong> Prior overpayment credits are automatically deducted from their invoice!</strong>
+            </p>
+          </div>
+          <button
+            onClick={() => onNav?.('bursar_tariffs')}
+            style={{
+              background: '#0284c7',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: 10,
+              padding: '10px 18px',
+              fontSize: 13,
+              fontWeight: 800,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              boxShadow: '0 2px 6px rgba(2, 132, 199, 0.3)',
+              transition: 'background 0.15s ease',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = '#0369a1')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = '#0284c7')}
+          >
+            <Calculator size={16} />
+            Open Student Billing &amp; Tariffs Engine &rarr;
+          </button>
+        </div>
+
+        {/* Overpayments & Refund Claims Card */}
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+            border: '2px solid #86efac',
+            borderRadius: 16,
+            padding: '20px 24px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.08)',
+          }}
+        >
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ background: '#059669', color: '#fff', borderRadius: 10, padding: 8, display: 'flex' }}>
+                  <RotateCcw size={20} />
+                </div>
+                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#064e3b' }}>
+                  Overpayments &amp; Refund Claims
+                </h3>
+              </div>
+              <span style={{ fontSize: 11, fontWeight: 800, background: '#059669', color: '#fff', padding: '3px 10px', borderRadius: 99 }}>
+                {(metrics.pending_refunds_count || 0) > 0 ? `${metrics.pending_refunds_count} Pending` : 'All Settled'}
+              </span>
+            </div>
+            <p style={{ margin: '0 0 16px 0', fontSize: 13, color: '#047857', lineHeight: 1.5 }}>
+              Track all students with active credit surplus (GH₵ {Number(metrics.total_credits || 0).toFixed(2)} total).
+              Review, approve, and disburse student cash/MoMo refund claims or monitor automatic next-semester rollovers.
+            </p>
+          </div>
+          <button
+            onClick={() => onNav?.('bursar_refunds')}
+            style={{
+              background: '#059669',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: 10,
+              padding: '10px 18px',
+              fontSize: 13,
+              fontWeight: 800,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              boxShadow: '0 2px 6px rgba(5, 150, 105, 0.3)',
+              transition: 'background 0.15s ease',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = '#047857')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = '#059669')}
+          >
+            <RotateCcw size={16} />
+            Review Student Overpayments &amp; Refunds &rarr;
+          </button>
         </div>
       </div>
 

@@ -584,9 +584,13 @@ export interface StudentStatement {
   src_dues:           string | number;
   examination_fee:    string | number;
   bursary_aid:        string | number;
+  previous_credit_applied?: string | number;
+  previous_arrears_applied?: string | number;
   total_billed:       string | number;
   total_paid:         string | number;
+  refunded_amount?:   string | number;
   balance:            string | number;
+  credit_balance?:    string | number;
   currency:           string;
   status:             'unpaid' | 'partial' | 'paid' | 'overdue';
   due_date:           string | null;
@@ -597,6 +601,25 @@ export interface StudentStatement {
   payments:           PaymentRecord[];
   created_at:         string;
   updated_at:         string;
+}
+
+export interface RefundRecord {
+  id:                     number;
+  student_id:             string;
+  student_name:           string;
+  student_email:          string;
+  student_index:          string;
+  semester:               string;
+  amount:                 string | number;
+  currency:               string;
+  channel:                'momo' | 'bank_transfer' | 'cash_cheque';
+  account_details:        string;
+  reason:                 string;
+  status:                 'pending' | 'approved' | 'disbursed' | 'rejected';
+  disbursement_reference: string;
+  admin_notes:            string;
+  created_at:             string;
+  reviewed_at:            string | null;
 }
 
 export interface SemesterFeeStructure {
@@ -620,25 +643,31 @@ export interface LevelBreakdownItem {
   total_billed: string | number;
   total_paid: string | number;
   total_arrears: string | number;
+  total_credits?: string | number;
   active_holds: number;
   collection_rate: number;
 }
 
 export interface BursarOverview {
   metrics: {
-    total_billed:       string | number;
-    total_paid:         string | number;
-    total_arrears:      string | number;
-    collection_rate?:   number;
-    momo_total:         string | number;
-    bank_total:         string | number;
-    active_holds_count: number;
-    level_breakdown?:   LevelBreakdownItem[];
+    total_billed:          string | number;
+    total_paid:            string | number;
+    total_arrears:         string | number;
+    total_credits?:        string | number;
+    collection_rate?:      number;
+    momo_total:            string | number;
+    bank_total:            string | number;
+    active_holds_count:    number;
+    pending_refunds_count?: number;
+    level_breakdown?:      LevelBreakdownItem[];
   };
   active_fee_structure: SemesterFeeStructure;
   fee_structures?:      SemesterFeeStructure[];
   recent_payments:      PaymentRecord[];
   pending_bank_slips:   PaymentRecord[];
+  pending_refunds?:     RefundRecord[];
+  recent_refunds?:      RefundRecord[];
+  credit_students?:     StudentStatement[];
 }
 
 // ── Security & System Audit Logs ──────────────────────────────────────────────

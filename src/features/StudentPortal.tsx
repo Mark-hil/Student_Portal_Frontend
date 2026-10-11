@@ -8,7 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard, BookOpen, BarChart2, Bell, User,
   Plus, GraduationCap, LogOut, Search, ClipboardCheck, Users, Shield, ShieldCheck,
-  Menu, X, Wallet, Coins, AlertCircle
+  Menu, X, Wallet, Coins, AlertCircle, Settings, RefreshCw, Calculator
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { C } from '../utils/theme';
@@ -102,7 +102,9 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
   ];
   const NAV_FINANCE = [
     { id: 'dashboard', label: 'Financial Overview', Icon: LayoutDashboard },
-    { id: 'bursar', label: 'Bursar & Accounts', Icon: Coins },
+    { id: 'bursar_tariffs', label: 'Student Billing & Tariffs', Icon: Calculator },
+    { id: 'bursar', label: 'Bursar Operations & Slips', Icon: Coins },
+    { id: 'bursar_refunds', label: 'Overpayments & Refunds', Icon: RefreshCw },
     { id: 'students', label: 'Student Directory', Icon: GraduationCap },
     { id: 'notifications', label: 'Notifications', Icon: Bell },
     { id: 'profile', label: 'Profile', Icon: User },
@@ -130,7 +132,9 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
     { id: 'students', label: 'Student Management', Icon: GraduationCap },
     { id: 'users', label: 'Staff & Roles', Icon: Users },
     { id: 'audit_logs', label: 'Security & Audit Logs', Icon: ShieldCheck },
-    { id: 'bursar', label: 'Bursar & Accounts', Icon: Coins },
+    { id: 'bursar_tariffs', label: 'Student Billing & Tariffs', Icon: Calculator },
+    { id: 'bursar', label: 'Bursar Operations', Icon: Coins },
+    { id: 'bursar_refunds', label: 'Overpayments & Refunds', Icon: RefreshCw },
     { id: 'courses_admin', label: 'Course Management', Icon: BookOpen },
     { id: 'review', label: 'Review Queue', Icon: ClipboardCheck },
     { id: 'notifications', label: 'Notifications', Icon: Bell },
@@ -160,7 +164,9 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
     audit_logs: 'Institutional Security & Audit Trail',
     courses_admin: 'Course Management',
     financials: 'Fees & Financials',
-    bursar: 'Bursar & Accounts',
+    bursar: 'Bursar Operations & Accounts',
+    bursar_tariffs: 'Semester Student Billing & Level Tariffs',
+    bursar_refunds: 'Student Overpayments & Refund Requests',
     register_profile: 'Student Profile Registration',
   };
 
@@ -185,7 +191,11 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
       case 'courses_admin': return <CourseManagement />;
       case 'bursar':
         if (isStaff) return <AdminDashboard user={currentUser} />;
-        return <BursarManagement />;
+        return <BursarManagement initialTab="overview" />;
+      case 'bursar_tariffs':
+        return <BursarManagement initialTab="tariffs" />;
+      case 'bursar_refunds':
+        return <BursarManagement initialTab="refunds" />;
       case 'courses': return <StudentCourses onNav={setView} />;
       case 'register': return <CourseRegistration />;
       case 'grades': return <StudentGrades onNav={setView} />;

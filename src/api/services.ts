@@ -10,7 +10,7 @@ import type {
   CourseSummaryRow, RegistrationWindow, ConflictCheck,
   Assignment, GradeBatch, GradeBatchListItem,
   Lesson, Submission, RosterData,
-  StudentStatement, PaymentRecord, SemesterFeeStructure, BursarOverview,
+  StudentStatement, PaymentRecord, SemesterFeeStructure, BursarOverview, RefundRecord,
   MOHVerificationResult, MOHUploadResult, StudentRegistrationPayload,
   AcademicProgressionLog, PromoteStudentPayload, DemoteStudentPayload,
   WithdrawStudentPayload, ReinstateStudentPayload, BulkPromotePayload, DeletionPrecheckResult,
@@ -463,6 +463,24 @@ export const financialsApi = {
     });
     downloadCsvBlob(res.data, filename);
   },
+
+  // Student Refund requests
+  requestRefund: (data: { amount: string | number; channel: string; account_details: string; reason?: string }) =>
+    client.post<{ message: string; refund: RefundRecord }>('/financials/refund/request/', data),
+
+  getMyRefundRequests: () =>
+    client.get<RefundRecord[]>('/financials/refund/my-requests/'),
+
+  // Bursar / Accounts Refund & Billing management
+  getAdminRefunds: (params?: { status?: string }) =>
+    client.get<RefundRecord[]>('/financials/admin/refunds/', { params }),
+
+  processRefund: (refundId: number, data: { approve: boolean; disbursement_ref?: string; notes?: string }) =>
+    client.post<{ message: string; refund: RefundRecord }>(`/financials/admin/refunds/${refundId}/action/`, data),
+
+  billStudents: (data: { semester: string; academic_level?: string }) =>
+    client.post<{ message: string; stats: { semester: string; academic_level: string; billed_count: number; total_billed: string | number; total_credits_applied: string | number } }>('/financials/admin/bill-students/', data),
+
 };
 
 // ── Audit Logs (Super-Admin & Auditor) ─────────────────────────────────────────

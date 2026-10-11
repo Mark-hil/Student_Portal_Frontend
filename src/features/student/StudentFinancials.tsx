@@ -20,9 +20,10 @@ import {
   Send,
   Lock,
   XCircle,
+  RotateCcw,
 } from 'lucide-react';
 import { financialsApi } from '../../api/services';
-import type { StudentStatement, PaymentRecord } from '../../types';
+import type { StudentStatement, PaymentRecord, RefundRecord } from '../../types';
 
 interface StudentFinancialsProps {
   user: any;
@@ -33,6 +34,17 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [exportingCsv, setExportingCsv] = useState(false);
+
+  // Refund Modal state
+  const [isRefundModalOpen, setIsRefundModalOpen] = useState(false);
+  const [refundAmount, setRefundAmount] = useState<string>('');
+  const [refundChannel, setRefundChannel] = useState<'momo' | 'bank_transfer' | 'cash'>('momo');
+  const [refundAccountDetails, setRefundAccountDetails] = useState('');
+  const [refundReason, setRefundReason] = useState('');
+  const [refundSubmitting, setRefundSubmitting] = useState(false);
+  const [refundSuccessMsg, setRefundSuccessMsg] = useState<string | null>(null);
+  const [myRefundRequests, setMyRefundRequests] = useState<RefundRecord[]>([]);
+  const [loadingRefunds, setLoadingRefunds] = useState(false);
 
   // Payment Modal state
   const [isPayModalOpen, setIsPayModalOpen] = useState(false);
@@ -74,6 +86,9 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
         setSimAmount(String(res.data.balance));
         setSlipAmount(String(res.data.balance));
       }
+      if (res.data && Number(res.data.credit_balance || 0) > 0) {
+        setRefundAmount(String(res.data.credit_balance));
+      }
     } catch (err: any) {
       console.error('Failed to load statement', err);
       setError(err?.response?.data?.detail || 'Unable to load student financial statement.');
@@ -82,9 +97,58 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
     }
   }, []);
 
+  const fetchRefundRequests = useCallback(async () => {
+    try {
+      setLoadingRefunds(true);
+      const res = await financialsApi.getMyRefundRequests();
+      setMyRefundRequests(res.data);
+    } catch (err) {
+      console.error('Failed to load my refund requests', err);
+    } finally {
+      setLoadingRefunds(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchStatement();
-  }, [fetchStatement]);
+    fetchRefundRequests();
+  }, [fetchStatement, fetchRefundRequests]);
+
+  const handleRefundSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const amt = Number(refundAmount);
+    const maxCredit = Number(statement?.credit_balance || 0);
+    if (isNaN(amt) || amt <= 0) {
+      alert('Please enter a valid refund amount.');
+      return;
+    }
+    if (amt > maxCredit) {
+      alert(`Requested refund amount cannot exceed your available credit balance of GH₵ ${maxCredit.toFixed(2)}.`);
+      return;
+    }
+    if (!refundAccountDetails.trim()) {
+      alert('Please provide your Mobile Money number or Bank Account details.');
+      return;
+    }
+
+    try {
+      setRefundSubmitting(true);
+      setRefundSuccessMsg(null);
+      const res = await financialsApi.requestRefund({
+        amount: refundAmount,
+        channel: refundChannel,
+        account_details: refundAccountDetails.trim(),
+        reason: refundReason.trim() || undefined,
+      });
+      setRefundSuccessMsg(res.data.message || 'Refund request submitted for Bursary review!');
+      fetchStatement();
+      fetchRefundRequests();
+    } catch (err: any) {
+      alert(err?.response?.data?.detail || 'Failed to submit refund request.');
+    } finally {
+      setRefundSubmitting(false);
+    }
+  };
 
   const handleDownloadReceipt = async (paymentId: number, receiptNum: string) => {
     try {
@@ -238,6 +302,7 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
   }
 
   const balanceNum = Number(statement?.balance || 0);
+  const creditBalanceNum = Number(statement?.credit_balance || 0);
   const totalBilledNum = Number(statement?.total_billed || 0);
   const totalPaidNum = Number(statement?.total_paid || 0);
   const isPaidInFull = statement?.status === 'paid' || balanceNum <= 0;
@@ -288,6 +353,17 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
               <Download size={16} />
               {exportingCsv ? 'Exporting...' : 'Export Statement (CSV)'}
             </button>
+            {creditBalanceNum > 0 && (
+              <button
+                type="button"
+                onClick={() => setIsRefundModalOpen(true)}
+                className="fin-btn-outline"
+                style={{ background: '#059669', color: '#fff', borderColor: '#34d399', fontSize: 13 }}
+              >
+                <RotateCcw size={16} />
+                Request Refund (GH₵ {creditBalanceNum.toFixed(2)})
+              </button>
+            )}
             <button
               onClick={() => {
                 setUssdStep('idle');
@@ -330,23 +406,71 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
             </div>
           </div>
         )}
+
+        {/* ── Active Overpayment Credit Surplus Banner ── */}
+        {creditBalanceNum > 0 && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'linear-gradient(90deg, #ecfdf5 0%, #d1fae5 100%)',
+              border: '1px solid #6ee7b7',
+              borderRadius: 12,
+              padding: '14px 20px',
+              color: '#065f46',
+              boxShadow: '0 2px 6px rgba(16, 185, 129, 0.1)',
+              marginTop: 14,
+              flexWrap: 'wrap',
+              gap: 12,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <CheckCircle2 size={24} color="#059669" />
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 14 }}>
+                  Overpayment Credit Balance: + GH₵ {creditBalanceNum.toFixed(2)}
+                </div>
+                <div style={{ fontSize: 12, color: '#047857' }}>
+                  You have paid more than your assessed fees. This credit will automatically deduct from your next semester tuition bill. You can also request an immediate payout refund.
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsRefundModalOpen(true)}
+              className="fin-btn-primary"
+              style={{ background: '#059669', fontSize: 12, padding: '7px 16px' }}
+            >
+              <RotateCcw size={14} /> Request Cash / MoMo Refund
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── Key Financial Stat Cards (GH₵) ────────────────────────────── */}
       <div className="fin-stats-grid">
-        {/* Outstanding Balance */}
+        {/* Outstanding Balance or Credit Surplus */}
         <div className="fin-stat-card">
           <div className="fin-stat-header">
-            <span className="fin-stat-label">OUTSTANDING BALANCE</span>
-            <span className={`fin-stat-badge ${isPaidInFull ? 'fin-stat-badge-paid' : 'fin-stat-badge-arrears'}`}>
-              {isPaidInFull ? 'Paid in Full' : 'Arrears Due'}
+            <span className="fin-stat-label">
+              {creditBalanceNum > 0 ? 'ACTIVE CREDIT SURPLUS' : 'OUTSTANDING BALANCE'}
+            </span>
+            <span className={`fin-stat-badge ${creditBalanceNum > 0 ? 'fin-stat-badge-paid' : isPaidInFull ? 'fin-stat-badge-paid' : 'fin-stat-badge-arrears'}`}>
+              {creditBalanceNum > 0 ? 'Account in Credit' : isPaidInFull ? 'Paid in Full' : 'Arrears Due'}
             </span>
           </div>
-          <div className={`fin-stat-val ${isPaidInFull ? 'emerald' : 'amber'}`}>
-            GH₵ {balanceNum.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          <div className={`fin-stat-val ${creditBalanceNum > 0 ? 'emerald' : isPaidInFull ? 'emerald' : 'amber'}`}>
+            {creditBalanceNum > 0
+              ? `+ GH₵ ${creditBalanceNum.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+              : `GH₵ ${balanceNum.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           </div>
           <div className="fin-stat-sub">
-            {statement?.due_date ? `Due Date: ${new Date(statement.due_date).toLocaleDateString()}` : 'Flat Semester Billing'}
+            {creditBalanceNum > 0
+              ? 'Overpayment held / auto-deducts next term'
+              : statement?.due_date
+              ? `Due Date: ${new Date(statement.due_date).toLocaleDateString()}`
+              : 'Flat Semester Billing'}
           </div>
         </div>
 
@@ -467,6 +591,30 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
                 </div>
                 <div className="fin-fee-amount" style={{ color: '#6d28d9' }}>
                   - GH₵ {Number(statement?.bursary_aid).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                </div>
+              </div>
+            )}
+
+            {Number(statement?.previous_credit_applied || 0) > 0 && (
+              <div className="fin-fee-row" style={{ background: '#ecfdf5', padding: '12px 16px', borderRadius: 10, margin: '8px 0', border: '1px solid #a7f3d0' }}>
+                <div>
+                  <div className="fin-fee-name" style={{ color: '#047857', fontWeight: 800 }}>Less: Prior Semester Overpayment Credit</div>
+                  <div className="fin-fee-desc" style={{ color: '#065f46' }}>Surplus funds rolled over from previous academic term</div>
+                </div>
+                <div className="fin-fee-amount" style={{ color: '#059669', fontWeight: 900 }}>
+                  - GH₵ {Number(statement?.previous_credit_applied).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                </div>
+              </div>
+            )}
+
+            {Number(statement?.previous_arrears_applied || 0) > 0 && (
+              <div className="fin-fee-row" style={{ background: '#fffbeb', padding: '12px 16px', borderRadius: 10, margin: '8px 0', border: '1px solid #fde68a' }}>
+                <div>
+                  <div className="fin-fee-name" style={{ color: '#b45309', fontWeight: 800 }}>Plus: Prior Semester Arrears Brought Forward</div>
+                  <div className="fin-fee-desc" style={{ color: '#92400e' }}>Unsettled balance carried forward from previous semester</div>
+                </div>
+                <div className="fin-fee-amount" style={{ color: '#b45309', fontWeight: 900 }}>
+                  + GH₵ {Number(statement?.previous_arrears_applied).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                 </div>
               </div>
             )}
@@ -1200,6 +1348,238 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── STUDENT REFUND REQUEST MODAL ── */}
+      {isRefundModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.7)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: 16,
+          }}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: 16,
+              maxWidth: 540,
+              width: '100%',
+              padding: 24,
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              border: '1px solid #cbd5e1',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div
+                  style={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: 10,
+                    background: '#ecfdf5',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <RotateCcw size={20} color="#059669" />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#0f172a' }}>
+                    Request Overpayment Refund
+                  </h3>
+                  <div style={{ fontSize: 12, color: '#64748b' }}>
+                    Receive your tuition surplus via Mobile Money or Bank Transfer
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsRefundModalOpen(false);
+                  setRefundSuccessMsg(null);
+                }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Credit Availability Notice */}
+            <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 10, padding: 14, marginBottom: 18 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 12, color: '#065f46', fontWeight: 700 }}>
+                  Active Credit Surplus Available:
+                </span>
+                <span style={{ fontSize: 18, color: '#047857', fontWeight: 900 }}>
+                  GH₵ {creditBalanceNum.toFixed(2)}
+                </span>
+              </div>
+              <p style={{ margin: '6px 0 0', fontSize: 11, color: '#047857', lineHeight: 1.4 }}>
+                <strong>Pro-tip:</strong> If you don&apos;t request a refund, this balance remains on your student account and is <em>automatically deducted</em> from your next semester tuition bill.
+              </p>
+            </div>
+
+            {refundSuccessMsg ? (
+              <div style={{ textAlign: 'center', padding: '24px 16px' }}>
+                <CheckCircle2 size={44} color="#10b981" style={{ margin: '0 auto 10px' }} />
+                <h4 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#0f172a' }}>
+                  Refund Request Submitted!
+                </h4>
+                <p style={{ fontSize: 13, color: '#64748b', margin: '8px 0 16px' }}>
+                  {refundSuccessMsg}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setRefundSuccessMsg(null)}
+                  className="fin-btn-secondary"
+                  style={{ fontSize: 12, padding: '7px 16px' }}
+                >
+                  Submit Another Request
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleRefundSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#475569', marginBottom: 4 }}>
+                    Disbursement Channel
+                  </label>
+                  <select
+                    value={refundChannel}
+                    onChange={(e) => setRefundChannel(e.target.value as any)}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 13 }}
+                  >
+                    <option value="momo">Mobile Money (MTN MoMo, Telecel Cash, AT Money)</option>
+                    <option value="bank_transfer">Bank Wire Transfer</option>
+                    <option value="cash">Cash / Cheque Collection at Accounts Office</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#475569', marginBottom: 4 }}>
+                    {refundChannel === 'momo'
+                      ? 'Mobile Money Number & Registered Name *'
+                      : refundChannel === 'bank_transfer'
+                      ? 'Bank Name, Branch & Account Number *'
+                      : 'Beneficiary Name & Ghana Card Number *'}
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder={
+                      refundChannel === 'momo'
+                        ? 'e.g. 0244123456 (MTN - Kofi Mensah)'
+                        : refundChannel === 'bank_transfer'
+                        ? 'e.g. GCB Bank, Legon Branch, Acc: 1029384756192'
+                        : 'e.g. Kofi Mensah (GHA-123456789-0)'
+                    }
+                    value={refundAccountDetails}
+                    onChange={(e) => setRefundAccountDetails(e.target.value)}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 12, boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#475569', marginBottom: 4 }}>
+                      Requested Refund Amount (GH₵) *
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      required
+                      min="1.00"
+                      max={creditBalanceNum > 0 ? creditBalanceNum : undefined}
+                      value={refundAmount}
+                      onChange={(e) => setRefundAmount(e.target.value)}
+                      style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 13, fontWeight: 800, boxSizing: 'border-box' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#475569', marginBottom: 4 }}>
+                      Reason for Refund (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Double payment via bank teller"
+                      value={refundReason}
+                      onChange={(e) => setRefundReason(e.target.value)}
+                      style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 12, boxSizing: 'border-box' }}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={refundSubmitting || creditBalanceNum <= 0}
+                  className="fin-btn-primary"
+                  style={{ background: '#059669', justifyContent: 'center', marginTop: 6, padding: '10px 16px' }}
+                >
+                  {refundSubmitting ? 'Submitting Request...' : 'Submit Refund Request to Bursary'}
+                </button>
+              </form>
+            )}
+
+            {/* Previous Student Refund Requests */}
+            {myRefundRequests.length > 0 && (
+              <div style={{ marginTop: 24, borderTop: '1px solid #e2e8f0', paddingTop: 16 }}>
+                <div style={{ fontSize: 13, fontWeight: 800, color: '#1e293b', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <RotateCcw size={14} color="#059669" />
+                  Your Refund Requests History
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="fin-table" style={{ width: '100%', fontSize: 11 }}>
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Amount</th>
+                        <th>Channel</th>
+                        <th>Destination</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {myRefundRequests.map((req) => (
+                        <tr key={req.id}>
+                          <td>{new Date(req.created_at).toLocaleDateString()}</td>
+                          <td style={{ fontWeight: 800, color: '#047857' }}>GH₵ {Number(req.amount).toFixed(2)}</td>
+                          <td>{req.channel}</td>
+                          <td style={{ fontFamily: 'monospace' }}>{req.account_details}</td>
+                          <td>
+                            <span
+                              className={`fin-badge ${
+                                req.status === 'disbursed'
+                                  ? 'fin-badge-green'
+                                  : req.status === 'pending'
+                                  ? 'fin-badge-amber'
+                                  : req.status === 'approved'
+                                  ? 'fin-badge-blue'
+                                  : 'fin-badge-red'
+                              }`}
+                              style={{ textTransform: 'capitalize' }}
+                            >
+                              {req.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
