@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#047857"/>
+      <stop offset="100%" stop-color="#064e3b"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="50%" stop-color="#facc15"/>
+      <stop offset="100%" stop-color="#ca8a04"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Background tile with rounded corners -->
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#bgGrad)" stroke="#facc15" stroke-width="2"/>
+
+  <!-- Academic Graduation Cap (Mortarboard) -->
+  <g filter="url(#shadow)">
+    <!-- Skull cap body -->
+    <path d="M 21 33.5 V 40.5 C 21 44.5 43 44.5 43 40.5 V 33.5" fill="url(#goldGrad)" opacity="0.95"/>
+    <!-- Diamond mortarboard top -->
+    <polygon points="32,18 52,27 32,36 12,27" fill="url(#goldGrad)"/>
+    <!-- Center button -->
+    <circle cx="32" cy="27" r="2" fill="#78350f"/>
+    <!-- Tassel -->
+    <path d="M 32 27 Q 45 28 47 36 L 47 43" fill="none" stroke="#fef08a" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="47" cy="44" r="1.5" fill="#fef08a"/>
+  </g>
+</svg>

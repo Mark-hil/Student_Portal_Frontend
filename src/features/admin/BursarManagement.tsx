@@ -24,6 +24,9 @@ import {
   Send,
   Lock,
   Layers,
+  X,
+  Eye,
+  FileText,
 } from 'lucide-react';
 import { financialsApi } from '../../api/services';
 import type { BursarOverview, PaymentRecord, SemesterFeeStructure } from '../../types';
@@ -67,6 +70,10 @@ export const BursarManagement: React.FC = () => {
 
   // Slip action state
   const [verifyingSlipId, setVerifyingSlipId] = useState<number | null>(null);
+  const [rejectModalSlip, setRejectModalSlip] = useState<PaymentRecord | null>(null);
+  const [rejectReasonPreset, setRejectReasonPreset] = useState<string>('Reference not found on official bank statement');
+  const [rejectCustomNote, setRejectCustomNote] = useState<string>('');
+  const [previewSlip, setPreviewSlip] = useState<PaymentRecord | null>(null);
 
   // Receipt download
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
@@ -207,14 +214,37 @@ export const BursarManagement: React.FC = () => {
     }
   };
 
-  // Slip Approval Handler
-  const handleVerifySlip = async (paymentId: number, approve: boolean) => {
+  // Slip Approval & Rejection Handlers
+  const handleVerifySlip = async (paymentId: number, approve: boolean, notes?: string) => {
     try {
       setVerifyingSlipId(paymentId);
-      await financialsApi.verifySlip(paymentId, approve, approve ? 'Verified by Bursary' : 'Deposit slip rejected - invalid reference');
+      await financialsApi.verifySlip(
+        paymentId,
+        approve,
+        notes || (approve ? 'Verified by Bursary' : 'Deposit slip rejected')
+      );
       fetchOverview();
     } catch (err: any) {
       alert(err?.response?.data?.detail || 'Failed to update slip status.');
+    } finally {
+      setVerifyingSlipId(null);
+    }
+  };
+
+  const handleConfirmRejection = async () => {
+    if (!rejectModalSlip) return;
+    const finalReason =
+      rejectReasonPreset === 'Other (Custom audit reason)'
+        ? (rejectCustomNote.trim() || 'Declined by Accounts Office')
+        : (rejectCustomNote.trim() ? `${rejectReasonPreset}: ${rejectCustomNote.trim()}` : rejectReasonPreset);
+
+    try {
+      setVerifyingSlipId(rejectModalSlip.id);
+      await financialsApi.verifySlip(rejectModalSlip.id, false, finalReason);
+      setRejectModalSlip(null);
+      fetchOverview();
+    } catch (err: any) {
+      alert(err?.response?.data?.detail || 'Failed to reject deposit slip.');
     } finally {
       setVerifyingSlipId(null);
     }
@@ -890,9 +920,25 @@ export const BursarManagement: React.FC = () => {
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         {slip.slip_image ? (
-                          <a href={slip.slip_image} target="_blank" rel="noreferrer" style={{ color: '#047857', fontWeight: 700, fontSize: 12 }}>
-                            View Image
-                          </a>
+                          <button
+                            type="button"
+                            onClick={() => setPreviewSlip(slip)}
+                            style={{
+                              background: '#ecfdf5',
+                              border: '1px solid #a7f3d0',
+                              color: '#047857',
+                              fontWeight: 700,
+                              fontSize: 12,
+                              padding: '5px 12px',
+                              borderRadius: 6,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 5,
+                            }}
+                          >
+                            <Eye size={13} /> View Slip
+                          </button>
                         ) : (
                           <span style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: 11 }}>No attachment</span>
                         )}
@@ -908,7 +954,11 @@ export const BursarManagement: React.FC = () => {
                             <CheckCircle2 size={13} /> Approve
                           </button>
                           <button
-                            onClick={() => handleVerifySlip(slip.id, false)}
+                            onClick={() => {
+                              setRejectModalSlip(slip);
+                              setRejectReasonPreset('Reference not found on official bank statement');
+                              setRejectCustomNote('');
+                            }}
                             disabled={verifyingSlipId === slip.id}
                             className="fin-btn-outline"
                             style={{ color: '#e11d48', borderColor: '#fecdd3', background: '#fff1f2', padding: '6px 12px', fontSize: 11 }}
@@ -1234,6 +1284,311 @@ export const BursarManagement: React.FC = () => {
 
             <div style={{ marginTop: 16, padding: 12, background: '#f8fafc', borderRadius: 10, fontSize: 12, color: '#64748b' }}>
               Registration Hold Rule: Course registration is restricted whenever student arrears exceed <strong>GH₵ 500.00</strong>.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── REJECTION REASON PROMPT MODAL ── */}
+      {rejectModalSlip && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.7)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: 16,
+          }}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: 16,
+              maxWidth: 480,
+              width: '100%',
+              padding: 24,
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              border: '1px solid #fecdd3',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    background: '#ffe4e6',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#e11d48',
+                  }}
+                >
+                  <XCircle size={20} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#0f172a' }}>
+                    Decline Deposit Slip
+                  </h3>
+                  <div style={{ fontSize: 12, color: '#64748b' }}>
+                    Audit record & student notification
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRejectModalSlip(null)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: '#94a3b8',
+                  padding: 4,
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div
+              style={{
+                background: '#f8fafc',
+                padding: '10px 12px',
+                borderRadius: 8,
+                fontSize: 12,
+                marginBottom: 16,
+                border: '1px solid #e2e8f0',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                <span style={{ color: '#64748b' }}>Student:</span>
+                <span style={{ fontWeight: 700, color: '#0f172a' }}>
+                  {rejectModalSlip.student_name} ({rejectModalSlip.student_index})
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                <span style={{ color: '#64748b' }}>Bank & Ref:</span>
+                <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>
+                  {rejectModalSlip.provider} · {rejectModalSlip.reference_number}
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#64748b' }}>Voucher Amount:</span>
+                <span style={{ fontWeight: 800, color: '#047857' }}>
+                  GH₵ {Number(rejectModalSlip.amount).toFixed(2)}
+                </span>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#334155', marginBottom: 4 }}>
+                Reason for Declining (Audit Standard)
+              </label>
+              <select
+                value={rejectReasonPreset}
+                onChange={(e) => setRejectReasonPreset(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '8px 10px',
+                  borderRadius: 8,
+                  border: '1px solid #cbd5e1',
+                  fontSize: 12,
+                  background: '#ffffff',
+                }}
+              >
+                <option value="Reference not found on official bank statement">
+                  Reference not found on official bank statement
+                </option>
+                <option value="Amount deposited does not match submitted voucher">
+                  Amount deposited does not match submitted voucher
+                </option>
+                <option value="Bank stamp or teller signature missing/illegible">
+                  Bank stamp or teller signature missing/illegible
+                </option>
+                <option value="Alteration or correction detected on physical slip">
+                  Alteration or correction detected on physical slip
+                </option>
+                <option value="Duplicate teller number submitted previously">
+                  Duplicate teller number submitted previously
+                </option>
+                <option value="Account credited belongs to a different institution">
+                  Account credited belongs to a different institution
+                </option>
+                <option value="Other (Custom audit reason)">
+                  Other (Custom audit reason)
+                </option>
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#334155', marginBottom: 4 }}>
+                Auditor Remarks / Notes for Student
+              </label>
+              <textarea
+                rows={3}
+                value={rejectCustomNote}
+                onChange={(e) => setRejectCustomNote(e.target.value)}
+                placeholder="Optional instructions for the student (e.g. please visit Cash Office with the physical bank receipt)..."
+                style={{
+                  width: '100%',
+                  padding: '8px 10px',
+                  borderRadius: 8,
+                  border: '1px solid #cbd5e1',
+                  fontSize: 12,
+                  fontFamily: 'inherit',
+                  resize: 'vertical',
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setRejectModalSlip(null)}
+                disabled={verifyingSlipId === rejectModalSlip.id}
+                className="fin-btn-secondary"
+                style={{ padding: '8px 16px', fontSize: 12 }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmRejection}
+                disabled={verifyingSlipId === rejectModalSlip.id}
+                className="fin-btn-primary"
+                style={{ background: '#e11d48', padding: '8px 16px', fontSize: 12 }}
+              >
+                <XCircle size={14} />
+                {verifyingSlipId === rejectModalSlip.id ? 'Declining Slip...' : 'Confirm Rejection'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── PREVIEW DEPOSIT SLIP MODAL ── */}
+      {previewSlip && (
+        <div className="fin-modal-overlay" style={{ zIndex: 9999 }}>
+          <div className="fin-modal-card" style={{ maxWidth: 640 }}>
+            <div className="fin-modal-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: 12 }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <FileText size={18} color="#047857" />
+                  Bank Deposit Slip Verification
+                </h3>
+                <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+                  Student: <strong>{previewSlip.student_name}</strong> &bull; Index: <strong>{previewSlip.student_index}</strong>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewSlip(null)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ padding: '16px 0' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, background: '#f8fafc', padding: 12, borderRadius: 10, border: '1px solid #e2e8f0', marginBottom: 14 }}>
+                <div>
+                  <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>Bank Provider</div>
+                  <strong style={{ fontSize: 13, color: '#0f172a' }}>{previewSlip.provider}</strong>
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>Teller Ref Number</div>
+                  <strong style={{ fontSize: 13, color: '#047857', fontFamily: 'monospace' }}>{previewSlip.reference_number}</strong>
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>Claimed Amount</div>
+                  <strong style={{ fontSize: 14, color: '#059669' }}>GH₵ {Number(previewSlip.amount).toFixed(2)}</strong>
+                </div>
+              </div>
+
+              {/* Slip Image Container */}
+              {(() => {
+                const rawUrl = previewSlip.slip_image || '';
+                const token = localStorage.getItem('access_token') || localStorage.getItem('portal_access') || '';
+                const viewUrl = rawUrl.includes('?sig=')
+                  ? rawUrl
+                  : (token ? (rawUrl.includes('?') ? `${rawUrl}&token=${encodeURIComponent(token)}` : `${rawUrl}?token=${encodeURIComponent(token)}`) : rawUrl);
+
+                return (
+                  <>
+                    <div style={{ maxHeight: 420, overflow: 'auto', borderRadius: 10, border: '1px solid #cbd5e1', background: '#0f172a', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 8 }}>
+                      <img
+                        src={viewUrl}
+                        alt={`Deposit Slip ${previewSlip.reference_number}`}
+                        style={{ maxWidth: '100%', maxHeight: 400, objectFit: 'contain', borderRadius: 6 }}
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          target.style.display = 'none';
+                          const errDiv = target.parentElement?.querySelector('.slip-img-fallback');
+                          if (errDiv) (errDiv as HTMLElement).style.display = 'block';
+                        }}
+                      />
+                      <div className="slip-img-fallback" style={{ display: 'none', color: '#f87171', padding: 20, textAlign: 'center', fontSize: 13 }}>
+                        Unable to render image preview directly. Click below to open in a new tab.
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+                      <a
+                        href={viewUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ fontSize: 12, color: '#2563eb', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                      >
+                        <ExternalLink size={13} /> Open Full Size in New Tab
+                      </a>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', borderTop: '1px solid #e2e8f0', paddingTop: 14 }}>
+              <button
+                type="button"
+                onClick={() => setPreviewSlip(null)}
+                className="fin-btn-secondary"
+                style={{ padding: '8px 16px', fontSize: 12 }}
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const slipToReject = previewSlip;
+                  setPreviewSlip(null);
+                  setRejectModalSlip(slipToReject);
+                  setRejectReasonPreset('Reference not found on official bank statement');
+                  setRejectCustomNote('');
+                }}
+                disabled={verifyingSlipId === previewSlip.id}
+                className="fin-btn-outline"
+                style={{ color: '#e11d48', borderColor: '#fecdd3', background: '#fff1f2', padding: '8px 16px', fontSize: 12 }}
+              >
+                <XCircle size={14} /> Reject Slip
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const slipToApprove = previewSlip;
+                  setPreviewSlip(null);
+                  handleVerifySlip(slipToApprove.id, true);
+                }}
+                disabled={verifyingSlipId === previewSlip.id}
+                className="fin-btn-primary"
+                style={{ background: '#059669', padding: '8px 16px', fontSize: 12 }}
+              >
+                <CheckCircle2 size={14} /> Approve &amp; Credit Ledger
+              </button>
             </div>
           </div>
         </div>

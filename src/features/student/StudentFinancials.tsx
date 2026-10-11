@@ -19,6 +19,7 @@ import {
   ChevronRight,
   Send,
   Lock,
+  XCircle,
 } from 'lucide-react';
 import { financialsApi } from '../../api/services';
 import type { StudentStatement, PaymentRecord } from '../../types';
@@ -35,7 +36,7 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
 
   // Payment Modal state
   const [isPayModalOpen, setIsPayModalOpen] = useState(false);
-  const [payTab, setPayTab] = useState<'momo' | 'bank_advice' | 'bank_slip'>('momo');
+  const [payTab, setPayTab] = useState<'momo' | 'bank_advice' | 'bank_slip'>('bank_slip');
 
   // MoMo Form
   const [momoProvider, setMomoProvider] = useState<'MTN MoMo' | 'Telecel Cash' | 'AT Money'>('MTN MoMo');
@@ -149,17 +150,20 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
       alert('Please provide the teller reference and valid deposit amount.');
       return;
     }
+    if (!slipFile) {
+      alert('Physical bank deposit slip photo or scan is required for audit verification.');
+      return;
+    }
 
     try {
       setSlipSubmitting(true);
       const formData = new FormData();
       formData.append('bank_name', slipBank);
-      formData.append('teller_slip_reference', slipRef);
+      formData.append('teller_slip_reference', slipRef.trim());
+      formData.append('slip_ref', slipRef.trim());
       formData.append('amount', slipAmount);
       formData.append('deposit_date', slipDate);
-      if (slipFile) {
-        formData.append('slip_image', slipFile);
-      }
+      formData.append('slip_image', slipFile);
 
       await financialsApi.submitBankSlip(formData);
       setSlipSuccess(true);
@@ -168,9 +172,15 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
         setSlipSuccess(false);
         setIsPayModalOpen(false);
         setSlipRef('');
+        setSlipFile(null);
       }, 2000);
     } catch (err: any) {
-      alert(err?.response?.data?.detail || 'Failed to submit bank deposit slip.');
+      const errMsg =
+        err?.response?.data?.detail ||
+        err?.response?.data?.slip_ref?.[0] ||
+        err?.response?.data?.teller_slip_reference?.[0] ||
+        'Failed to submit bank deposit slip.';
+      alert(errMsg);
     } finally {
       setSlipSubmitting(false);
     }
@@ -255,7 +265,7 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
             </div>
             <h1 className="fin-hero-title">Fees &amp; Financial Ledger</h1>
             <p className="fin-hero-subtitle">
-              Settle semester flat fees instantly via Ghanaian Mobile Money (MTN MoMo, Telecel Cash, AT Money) or direct bank branch deposit.
+              Settle semester fees via bank deposit slip submission for Bursary verification and reconciliation.
             </p>
           </div>
 
@@ -483,6 +493,7 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
               </div>
             </div>
 
+            {/* Mobile Money and Direct Bank commented out for now
             <div className="fin-channel-box">
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
                 <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b' }} />
@@ -502,14 +513,15 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
                 Pay over-the-counter at <strong>GCB Bank, Ecobank, Zenith Bank, CalBank</strong> quoting your Index Number.
               </p>
             </div>
+            */}
 
             <div className="fin-channel-box">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#94a3b8' }} />
-                3. Manual Bank Slip (Fallback)
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: '#047857' }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#047857' }} />
+                Manual Bank Deposit Slip Submission
               </div>
               <p style={{ margin: '4px 0 0', fontSize: 12, color: '#64748b', lineHeight: 1.4 }}>
-                Upload paper teller slip reference if paid at remote branches for Bursary verification.
+                Pay into the university accounts at any commercial bank and upload your stamped deposit slip for Bursar verification and ledger credit.
               </p>
             </div>
           </div>
@@ -618,23 +630,68 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
                         GH₵ {Number(p.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                       </td>
                       <td style={{ textAlign: 'center' }}>
-                        <span
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 4,
-                            padding: '3px 8px',
-                            borderRadius: 99,
-                            fontSize: 11,
-                            fontWeight: 700,
-                            background: isCompleted ? '#ecfdf5' : '#fffbeb',
-                            color: isCompleted ? '#059669' : '#d97706',
-                            border: `1px solid ${isCompleted ? '#a7f3d0' : '#fde68a'}`,
-                          }}
-                        >
-                          {isCompleted ? <CheckCircle2 size={12} /> : <Clock size={12} />}
-                          {isCompleted ? 'Verified' : 'Pending'}
-                        </span>
+                        {isCompleted ? (
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              padding: '3px 8px',
+                              borderRadius: 99,
+                              fontSize: 11,
+                              fontWeight: 700,
+                              background: '#ecfdf5',
+                              color: '#059669',
+                              border: '1px solid #a7f3d0',
+                            }}
+                          >
+                            <CheckCircle2 size={12} />
+                            Verified
+                          </span>
+                        ) : p.status === 'failed' ? (
+                          <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <span
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                padding: '3px 8px',
+                                borderRadius: 99,
+                                fontSize: 11,
+                                fontWeight: 700,
+                                background: '#fff1f2',
+                                color: '#e11d48',
+                                border: '1px solid #fecdd3',
+                              }}
+                            >
+                              <XCircle size={12} />
+                              Declined
+                            </span>
+                            {p.notes && (
+                              <span style={{ fontSize: 10, color: '#be123c', marginTop: 3, maxWidth: 160, textAlign: 'center', lineHeight: 1.2 }}>
+                                {p.notes}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              padding: '3px 8px',
+                              borderRadius: 99,
+                              fontSize: 11,
+                              fontWeight: 700,
+                              background: '#fffbeb',
+                              color: '#d97706',
+                              border: '1px solid #fde68a',
+                            }}
+                          >
+                            <Clock size={12} />
+                            Pending Review
+                          </span>
+                        )}
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         {isCompleted ? (
@@ -646,6 +703,8 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
                             <Download size={13} />
                             PDF Receipt
                           </button>
+                        ) : p.status === 'failed' ? (
+                          <span style={{ fontSize: 11, color: '#e11d48', fontWeight: 600 }}>Unverified</span>
                         ) : (
                           <span style={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic' }}>Pending Review</span>
                         )}
@@ -686,6 +745,7 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
 
             {/* Tab switch */}
             <div className="fin-modal-tabs">
+              {/* Temporarily commented out: Mobile Money & Partner Bank Direct
               <button
                 onClick={() => setPayTab('momo')}
                 className={`fin-tab-btn ${payTab === 'momo' ? 'active' : ''}`}
@@ -700,18 +760,22 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
                 <Building2 size={16} />
                 Bank Direct (Branch Collect)
               </button>
+              */}
               <button
                 onClick={() => setPayTab('bank_slip')}
-                className={`fin-tab-btn ${payTab === 'bank_slip' ? 'active' : ''}`}
+                className="fin-tab-btn active"
               >
                 <FileText size={16} />
-                Submit Deposit Slip
+                Submit Bank Deposit Slip
               </button>
             </div>
 
             <div className="fin-modal-body">
-              {/* TAB 1: Mobile Money */}
-              {payTab === 'momo' && (
+              {/* Temporarily disabled: Mobile Money & Partner Bank Direct */}
+              {false && (
+                <>
+                  {/* TAB 1: Mobile Money */}
+                  {payTab === 'momo' && (
                 <div>
                   {ussdStep === 'idle' && (
                     <form onSubmit={handleMoMoSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -895,15 +959,15 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
                         Payment Verified Successfully!
                       </h4>
                       <p style={{ margin: '6px 0', fontSize: 13, color: '#64748b' }}>
-                        Receipt Number: <strong style={{ color: '#047857', fontFamily: 'monospace' }}>{lastPayment.receipt_number}</strong>
+                        Receipt Number: <strong style={{ color: '#047857', fontFamily: 'monospace' }}>{lastPayment?.receipt_number}</strong>
                       </p>
                       <div style={{ fontSize: 14, fontWeight: 800, color: '#059669', marginBottom: 20 }}>
-                        GH₵ {Number(lastPayment.amount).toFixed(2)} Credited to Student Ledger
+                        GH₵ {Number(lastPayment?.amount || 0).toFixed(2)} Credited to Student Ledger
                       </div>
 
                       <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
                         <button
-                          onClick={() => handleDownloadReceipt(lastPayment.id, lastPayment.receipt_number)}
+                          onClick={() => lastPayment && handleDownloadReceipt(lastPayment.id, lastPayment.receipt_number)}
                           className="fin-btn-primary"
                         >
                           <Download size={16} />
@@ -924,7 +988,6 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
                 </div>
               )}
 
-              {/* TAB 2: Bank Direct Branch Collect */}
               {payTab === 'bank_advice' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   <div style={{ padding: 14, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12 }}>
@@ -937,7 +1000,6 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
                     </p>
                   </div>
 
-                  {/* Voucher Card */}
                   <div style={{ border: '1px solid #cbd5e1', borderRadius: 14, padding: 16, background: '#f8fafc', fontFamily: 'monospace' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: 8, marginBottom: 12 }}>
                       <span style={{ fontSize: 11, fontWeight: 800, color: '#64748b' }}>BANK ADVICE VOUCHER</span>
@@ -966,7 +1028,6 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
                     </div>
                   </div>
 
-                  {/* Simulator for demo */}
                   <div style={{ padding: 14, background: '#f1f5f9', borderRadius: 12, border: '1px solid #e2e8f0' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                       <span style={{ fontSize: 12, fontWeight: 800, color: '#334155' }}>
@@ -1023,6 +1084,8 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
                     </button>
                   </div>
                 </div>
+              )}
+                </>
               )}
 
               {/* TAB 3: Manual Bank Slip Fallback */}
@@ -1110,14 +1173,18 @@ export const StudentFinancials: React.FC<StudentFinancialsProps> = ({ user }) =>
 
                       <div>
                         <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#475569', marginBottom: 4 }}>
-                          Deposit Slip Image / Scan (Optional)
+                          Deposit Slip Image / Scan <span style={{ color: '#e11d48' }}>* (Required for Audit Verification)</span>
                         </label>
                         <input
                           type="file"
                           accept="image/*,.pdf"
+                          required
                           onChange={(e) => setSlipFile(e.target.files?.[0] || null)}
                           style={{ width: '100%', padding: '6px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 12 }}
                         />
+                        <div style={{ fontSize: 10, color: '#64748b', marginTop: 3 }}>
+                          Upload clear photo or PDF scan of the bank-stamped teller slip. Required for finance reconciliation.
+                        </div>
                       </div>
 
                       <button
