@@ -75,7 +75,7 @@ jobs:
   # ─────────────────────────────────────────────────────────────
   docker-build-check:
     name: Frontend Docker Image Build Check
-    needs: type-check
+    needs: build-bundle
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -99,7 +99,7 @@ jobs:
   # ─────────────────────────────────────────────────────────────
   ci-pipeline-complete:
     name: Frontend CI Complete
-    needs: [build-bundle, docker-build-check]
+    needs: [docker-build-check]
     runs-on: ubuntu-latest
     steps:
       - name: Confirm All Checks Passed

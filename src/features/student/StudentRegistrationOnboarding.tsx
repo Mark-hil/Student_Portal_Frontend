@@ -417,6 +417,21 @@ export function StudentRegistrationOnboarding({ user, onComplete, onLogout, onDi
             >
               ID: {user.student_id || 'ASDAM Student'}
             </span>
+            {user.moh_pin && (
+              <span
+                style={{
+                  background: 'rgba(16, 185, 129, 0.18)',
+                  color: '#6ee7b7',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  padding: '4px 12px',
+                  borderRadius: 99,
+                }}
+              >
+                MOH PIN: {user.moh_pin}
+              </span>
+            )}
           </div>
 
           <h1 style={{ fontSize: 26, fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', margin: '0 0 8px' }}>
@@ -839,6 +854,10 @@ export function StudentRegistrationOnboarding({ user, onComplete, onLogout, onDi
                   <div>
                     <span style={{ color: '#64748b' }}>Student ID:</span>{' '}
                     <strong style={{ color: '#818cf8' }}>{user.student_id}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b' }}>MOH PIN:</span>{' '}
+                    <strong style={{ color: '#34d399' }}>{user.moh_pin || 'Pending MOH Assignment'}</strong>
                   </div>
                   <div>
                     <span style={{ color: '#64748b' }}>Ghana Card:</span>{' '}

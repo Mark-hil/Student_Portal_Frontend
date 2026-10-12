@@ -97,7 +97,7 @@ export function StudentGrades({ onNav }: { onNav?: (tab: string) => void } = {})
     user?.full_name ||
     (user?.first_name ? `${user.first_name} ${user.last_name}` : 'Student Candidate');
   const studentIndexNo = user?.student_id || 'ASDAM-STUDENT';
-  const mohPin = user?.moh_pin || 'MOH-NUR-VERIFIED';
+  const mohPin = user?.moh_pin || 'Pending Assignment';
   const programName = user?.program
     ? user.program.charAt(0).toUpperCase() +
       user.program.slice(1) +

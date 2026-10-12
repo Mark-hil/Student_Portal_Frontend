@@ -309,6 +309,11 @@ export function ProfileView({ user, onUserUpdate, onNav }: Props) {
                     <Shield size={15} /> ID: <strong>{user.student_id}</strong>
                   </span>
                 )}
+                {user.moh_pin && (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(16, 185, 129, 0.2)', padding: '2px 8px', borderRadius: 6, border: '1px solid rgba(16, 185, 129, 0.35)' }}>
+                    <Award size={15} color="#6ee7b7" /> MOH PIN: <strong style={{ color: '#6ee7b7' }}>{user.moh_pin}</strong>
+                  </span>
+                )}
                 {user.department && (
                   <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <Building size={15} /> {user.department}
@@ -440,6 +445,12 @@ export function ProfileView({ user, onUserUpdate, onNav }: Props) {
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: `1px solid ${C.slate1}` }}>
                   <span style={{ fontSize: 13.5, color: C.slate5 }}>Student ID</span>
                   <span style={{ fontSize: 13.5, fontWeight: 700, color: C.slate8 }}>{user.student_id || 'STU-2024-8891'}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: `1px solid ${C.slate1}` }}>
+                  <span style={{ fontSize: 13.5, color: C.slate5 }}>MOH / Nursing PIN</span>
+                  <span style={{ fontSize: 13.5, fontWeight: 700, color: user.moh_pin ? C.emerald : C.slate5 }}>
+                    {user.moh_pin || 'Pending MOH Assignment'}
+                  </span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: `1px solid ${C.slate1}` }}>
                   <span style={{ fontSize: 13.5, color: C.slate5 }}>Contact Phone</span>

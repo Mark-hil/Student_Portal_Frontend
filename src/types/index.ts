@@ -843,6 +843,7 @@ export interface ExamClearanceStatus {
   total_credits: number;
   semester: string;
   student_id: string;
+  moh_pin?: string;
   student_name: string;
   program: string;
   class_name: string;

@@ -97,8 +97,9 @@ export const StudentRegistrationModal: React.FC<StudentRegistrationModalProps> =
               <div style={{ fontSize: 16, fontWeight: 800, color: C.slate9 }}>
                 {user.first_name} {user.last_name}
               </div>
-              <div style={{ fontSize: 12.5, color: C.slate6, display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ fontSize: 12.5, color: C.slate6, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                 <span>ID: <strong style={{ fontFamily: 'monospace', color: C.indigo }}>{user.student_id || 'Pending'}</strong></span>
+                <span>MOH PIN: <strong style={{ fontFamily: 'monospace', color: user.moh_pin ? C.emerald : C.slate5 }}>{user.moh_pin || 'Pending'}</strong></span>
                 <span>Program: <strong>{user.program === 'nursing' ? 'Diploma in Nursing' : user.program === 'midwifery' ? 'Diploma in Midwifery' : (user.department || 'Nursing')}</strong></span>
                 <span>Level: <strong>{user.class_name || '100'}</strong></span>
               </div>

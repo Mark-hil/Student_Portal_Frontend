@@ -15,6 +15,7 @@ interface EditUserModalProps {
     last_name: string;
     department: string;
     role: string;
+    moh_pin?: string;
   }) => void;
   isPending: boolean;
 }
@@ -76,6 +77,7 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
   const [lastName, setLastName] = useState(user.last_name || '');
   const [department, setDepartment] = useState(user.department || '');
   const [role, setRole] = useState(normalizeRoleValue(user.role));
+  const [mohPin, setMohPin] = useState(user.moh_pin || '');
   const [avatar, setAvatar] = useState(user.avatar || '');
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
@@ -84,6 +86,7 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
     setLastName(user.last_name || '');
     setDepartment(user.department || '');
     setRole(normalizeRoleValue(user.role));
+    setMohPin(user.moh_pin || '');
     setAvatar(user.avatar || '');
   }, [user]);
 
@@ -114,6 +117,7 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
       last_name: lastName,
       department,
       role,
+      moh_pin: mohPin ? mohPin.trim() : undefined,
     });
   };
 
@@ -223,6 +227,23 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
               )}
             </select>
           </div>
+
+          {(user.role === 'student' || role === 'student' || user.student_id || user.moh_pin) && (
+            <div>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: C.slate7, marginBottom: 4 }}>
+                MOH / Nursing & Midwifery PIN
+              </label>
+              <input
+                value={mohPin}
+                placeholder="e.g. MOH-NUR-2026-001"
+                onChange={e => setMohPin(e.target.value.toUpperCase())}
+                style={{ width: '100%', padding: '9px 12px', border: `1px solid ${C.slate2}`, borderRadius: 8, fontSize: 13, boxSizing: 'border-box' }}
+              />
+              <div style={{ fontSize: 11, color: C.slate5, marginTop: 4 }}>
+                Assigned Ministry of Health index/PIN for academic progression and clearance.
+              </div>
+            </div>
+          )}
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 22 }}>

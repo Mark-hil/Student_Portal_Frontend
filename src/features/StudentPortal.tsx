@@ -337,6 +337,11 @@ export default function StudentPortal({ user: initialUser, onLogout }: Props) {
           <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.5)', textTransform: 'capitalize', marginTop: 2 }}>
             {currentUser.role} {currentUser.student_id ? `· ${currentUser.student_id}` : ''}
           </div>
+          {currentUser.moh_pin && (
+            <div style={{ fontSize: 10.5, color: '#34d399', fontWeight: 600, marginTop: 1, letterSpacing: '0.02em' }}>
+              PIN: {currentUser.moh_pin}
+            </div>
+          )}
         </div>
       </div>
 

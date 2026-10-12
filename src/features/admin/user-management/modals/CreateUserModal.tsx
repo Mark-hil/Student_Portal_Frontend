@@ -15,6 +15,7 @@ export interface CreateUserData {
   program: string;
   class_name: string;
   department: string;
+  moh_pin?: string;
 }
 
 interface CreateUserModalProps {
@@ -51,6 +52,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
     program: 'nursing',
     class_name: '100',
     department: mode === 'students' ? 'Nursing' : '',
+    moh_pin: '',
   });
 
   useEffect(() => {
@@ -65,6 +67,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
         program: 'nursing',
         class_name: '100',
         department: mode === 'students' ? 'Nursing' : '',
+        moh_pin: '',
       });
     }
   }, [isOpen, mode]);
@@ -218,6 +221,24 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
               Login credentials and portal link will be dispatched via Arkesel SMS to this number.
             </div>
           </div>
+
+          {/* MOH / Nursing PIN for Student */}
+          {isStudentCreation && (
+            <div>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.slate7, marginBottom: 5 }}>
+                MOH / Nursing & Midwifery PIN (Optional)
+              </label>
+              <input
+                placeholder="e.g. MOH-NUR-2026-001 or NMC/PIN/12345"
+                value={newUser.moh_pin || ''}
+                onChange={e => setNewUser({ ...newUser, moh_pin: e.target.value.toUpperCase() })}
+                style={{ width: '100%', padding: '10px 14px', border: `1px solid ${C.slate2}`, borderRadius: 10, fontSize: 13.5, boxSizing: 'border-box' }}
+              />
+              <div style={{ fontSize: 11.5, color: C.slate5, marginTop: 4 }}>
+                If available, pre-assigns the Ministry of Health index/PIN for state licensing and examination clearance.
+              </div>
+            </div>
+          )}
 
           {/* Department field for Staff */}
           {!isStudentCreation && (

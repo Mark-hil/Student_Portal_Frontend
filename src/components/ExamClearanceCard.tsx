@@ -150,6 +150,25 @@ export const ExamClearanceCard: React.FC<ExamClearanceCardProps> = () => {
               <Calendar size={13} style={{ color: '#ca8a04' }} />
               {status.semester}
             </span>
+
+            {status.moh_pin && (
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: '#065f46',
+                  background: '#d1fae5',
+                  border: '1px solid #6ee7b7',
+                  padding: '2px 8px',
+                  borderRadius: 9999,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                }}
+              >
+                MOH PIN: {status.moh_pin}
+              </span>
+            )}
           </div>
 
           <h3
