@@ -126,9 +126,11 @@ jobs:
           path: /tmp
 
       - name: Load and Push Image to Docker Hub
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
         run: |
           docker load --input /tmp/frontend-image.tar
-          for tag in ${{ steps.meta.outputs.tags }}; do
+          for tag in $TAGS; do
             echo "Tagging and pushing $tag..."
             docker tag student-portal-frontend:test "$tag"
             docker push "$tag"
